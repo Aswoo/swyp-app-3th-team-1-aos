@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: "Kotlin & Jetpack Compose Code Style Guide with Korean comments"
 globs: ""
 alwaysApply: true

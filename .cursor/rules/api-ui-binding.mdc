@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: "API and UI Binding Creation using MVVM and Material3"
 globs: ""
 alwaysApply: true

@@ -1,7 +1,7 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+description: "Dependency Management Guide for Android Development"
+globs: ""
+alwaysApply: true
 ---
 # Dependency Management Guide
 

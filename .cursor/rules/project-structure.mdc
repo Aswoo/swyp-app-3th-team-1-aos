@@ -1,7 +1,7 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+description: "Project Structure Guide for Android Development"
+globs: ""
+alwaysApply: true
 ---
 # Project Structure Guide
 

@@ -1,7 +1,7 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+description: "Performance Optimization Guide for Android Development"
+globs: ""
+alwaysApply: true
 ---
 # Performance Optimization Guide
 

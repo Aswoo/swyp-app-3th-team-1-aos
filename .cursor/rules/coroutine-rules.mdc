@@ -1,0 +1,83 @@
+# Android Coroutine Rules
+
+## Architecture
+- **Always put business logic in ViewModel, not in LaunchedEffect**
+- LaunchedEffect is only for simple triggers and side effects
+- Use `viewModelScope` for ViewModel, `lifecycleScope` for Activity/Fragment
+- Never use `GlobalScope`
+
+## Dispatchers
+- Use `Dispatchers.IO` for network, database, file operations
+- Use `Dispatchers.Default` for CPU-intensive work
+- Use `Dispatchers.Main` (or omit) for UI updates
+- Always specify dispatcher with `withContext` in suspend functions
+
+## Exception Handling
+- Wrap all coroutine operations in `try-catch`
+- Or use `CoroutineExceptionHandler`
+- Never leave exceptions unhandled
+
+## Structured Concurrency
+- Use `coroutineScope` or `supervisorScope` for parallel work
+- Use `async/await` for coordinated parallel execution
+- Never nest uncoordinated `launch` calls
+
+## Flow
+- Use `StateFlow` for UI state in ViewModel
+- Collect flows with `repeatOnLifecycle(Lifecycle.State.STARTED)`
+- Use `flowOn(Dispatchers.IO)` for background operations
+
+## Cancellation
+- Check `isActive` or call `ensureActive()` in long-running loops
+- Never use `Thread.sleep()` or blocking operations in coroutines
+- Use `delay()` only for retries, polling, or test scenarios
+- **Never use `delay()` to wait for operations to complete** - use proper callbacks, listeners, or suspendCoroutine
+
+## Testing
+- Use `runTest` for coroutine tests
+- Use `TestDispatcher` for time control
+
+## Anti-patterns to Avoid
+```kotlin
+// ❌ Don't: delay() for waiting operations to complete
+suspend fun loadMap() {
+    drawPath()
+    delay(500) // Waiting for rendering - WRONG!
+    captureSnapshot()
+}
+
+// ✅ Do: Use callbacks or suspendCoroutine
+suspend fun loadMap() = suspendCoroutine { continuation ->
+    drawPath(onComplete = {
+        captureSnapshot()
+        continuation.resume(Unit)
+    })
+}
+
+// ❌ Don't: Complex async in LaunchedEffect
+LaunchedEffect(key) {
+    launch { task1() }
+    launch { task2() }
+}
+
+// ✅ Do: Handle in ViewModel
+viewModel.loadData()
+
+// ❌ Don't: runBlocking on main thread
+fun onClick() { runBlocking { } }
+
+// ✅ Do: Use proper scope
+viewModelScope.launch { }
+
+// ❌ Don't: Uncoordinated launches
+launch { }
+launch { }
+updateUI() // Runs before launches complete
+
+// ✅ Do: Use coroutineScope + async
+coroutineScope {
+    val a = async { task1() }
+    val b = async { task2() }
+    updateUI(a.await(), b.await())
+}
+```

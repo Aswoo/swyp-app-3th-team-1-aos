@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: "Comprehensive UI System Guide for Android Jetpack Compose"
 globs: ""
 alwaysApply: true

@@ -19,14 +19,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.data.model.WalkingSession
+import team.swyp.sdu.presentation.viewmodel.KakaoMapViewModel
 import team.swyp.sdu.presentation.viewmodel.WalkingViewModel
 import team.swyp.sdu.ui.components.KakaoMapView
 
@@ -42,9 +46,13 @@ fun WalkingResultScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRouteDetail: (List<LocationPoint>) -> Unit = {},
     viewModel: WalkingViewModel = hiltViewModel(),
+    mapViewModel: KakaoMapViewModel = hiltViewModel(),
 ) {
     // ViewModel에서 세션 가져오기
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // 스냅샷 상태 구독
+    val snapshotState by mapViewModel.snapshotState.collectAsStateWithLifecycle()
 
     // Completed 상태가 아니면 에러 처리
     val session =
@@ -96,6 +104,7 @@ fun WalkingResultScreen(
                 KakaoMapView(
                     locations = session.locations,
                     modifier = Modifier.fillMaxSize(),
+                    viewModel = mapViewModel,
                 )
             }
 
@@ -113,11 +122,28 @@ fun WalkingResultScreen(
                         // Main 화면의 WalkingScreen에서 LaunchedEffect가 Completed 상태를 감지하고
                         // 이미 초기화되어 있으므로 추가 초기화는 불필요하지만, 명시적으로 호출
                         viewModel.reset()
+                        mapViewModel.reset() // 지도 ViewModel도 초기화
                         onNavigateBack()
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("다시 시작하기")
+                }
+
+                // 스냅샷 이미지 표시
+                snapshotState?.let { bitmap ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "지도 스냅샷",
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
                 }
             }
         }

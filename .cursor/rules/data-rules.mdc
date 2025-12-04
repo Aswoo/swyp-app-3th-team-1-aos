@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: "Data Class Implementation Rules for Android Development"
 globs: ""
 alwaysApply: true

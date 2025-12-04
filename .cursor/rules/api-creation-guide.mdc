@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: "API Creation Guide following MVVM architecture and Material3"
 globs: ""
 alwaysApply: true
