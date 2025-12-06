@@ -41,6 +41,20 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location|location" />
+        <!-- 카카오 로그인 리다이렉트 URI 설정 -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- 리다이렉트 URI: "kakaodd4a75c8aa122d46a52c64492a973b63://oauth" -->
+                <data android:host="oauth"
+                    android:scheme="kakao68c990d0dffd2c76950df08fc29f42a0" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,7 +1,10 @@
 package team.swyp.sdu
 
 import android.app.Application
+import com.kakao.sdk.common.KakaoSdk
 import com.kakao.vectormap.KakaoMapSdk
+import com.navercorp.nid.NidOAuth
+import com.navercorp.nid.core.data.datastore.NidOAuthInitializingCallback
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
@@ -15,11 +18,34 @@ class WalkingBuddyApplication : Application() {
         // 릴리즈 빌드에서는 Crashlytics 등으로 로그 전송 가능
         Timber.plant(Timber.DebugTree())
 
-        // KakaoMap SDK 초기화
+        // Kakao SDK 초기화
         // AndroidManifest.xml의 meta-data에서 앱 키를 읽어옴
-        val appKey = "dd4a75c8aa122d46a52c64492a973b63"
-        KakaoMapSdk.init(this, appKey)
+        val kakaoAppKey = "68c990d0dffd2c76950df08fc29f42a0"
+        KakaoSdk.init(this, kakaoAppKey)
 
-        Timber.d("TtApplication onCreate")
+        // KakaoMap SDK 초기화
+        KakaoMapSdk.init(this, kakaoAppKey)
+
+        // Naver OAuth SDK 초기화
+        val naverClientId = "Y8Pez_IEsxqJPCCA9fQe"
+        val naverClientSecret = "AmtwieLa57"
+        val naverClientName = "SWYP"
+        NidOAuth.initialize(
+            this,
+            naverClientId,
+            naverClientSecret,
+            naverClientName,
+            object : NidOAuthInitializingCallback {
+                override fun onSuccess() {
+                    Timber.d("Naver OAuth SDK 초기화 성공")
+                }
+
+                override fun onFailure(e: Exception) {
+                    Timber.e(e, "Naver OAuth SDK 초기화 실패")
+                }
+            },
+        )
+
+        Timber.d("WalkingBuddyApplication onCreate")
     }
 }

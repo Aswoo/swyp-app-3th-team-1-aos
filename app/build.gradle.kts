@@ -144,6 +144,12 @@ dependencies {
     // Calendar Library
     implementation(libs.calendar.compose)
 
+    // Kakao SDK
+    implementation(libs.kakao.sdk)
+
+    // Naver OAuth SDK
+    implementation(libs.naver.oauth)
+
     // JUnit 4 (기존 호환성)
     testImplementation(libs.junit)
 
