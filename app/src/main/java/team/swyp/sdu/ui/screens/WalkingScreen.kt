@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,9 +57,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.text.style.TextAlign
+import team.swyp.sdu.data.model.EmotionType
 import team.swyp.sdu.domain.service.ActivityType
 import team.swyp.sdu.presentation.viewmodel.WalkingUiState
 import team.swyp.sdu.presentation.viewmodel.WalkingViewModel
+import team.swyp.sdu.ui.components.LottieAnimationView
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -129,8 +136,21 @@ fun WalkingScreen(
     ) {
         when (val state = uiState) {
             is WalkingUiState.Initial -> {
-                InitialView(
-                    onStartClick = {
+                EmotionSelectionView(
+                    viewModel = viewModel,
+                    onNextClick = {
+                        if (permissionsState.allPermissionsGranted) {
+                            viewModel.startWalking()
+                        }
+                    },
+                    permissionsGranted = permissionsState.allPermissionsGranted,
+                )
+            }
+
+            is WalkingUiState.EmotionSelection -> {
+                EmotionSelectionView(
+                    viewModel = viewModel,
+                    onNextClick = {
                         if (permissionsState.allPermissionsGranted) {
                             viewModel.startWalking()
                         }
@@ -172,38 +192,213 @@ fun WalkingScreen(
 }
 
 /**
- * 초기 화면 (산책 시작 전)
+ * 감정 선택 화면 (산책 시작 전)
  */
 @Composable
-private fun InitialView(
-    onStartClick: () -> Unit,
+private fun EmotionSelectionView(
+    viewModel: WalkingViewModel,
+    onNextClick: () -> Unit,
     permissionsGranted: Boolean,
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedEmotions = when (uiState) {
+        is WalkingUiState.EmotionSelection -> (uiState as WalkingUiState.EmotionSelection).selectedEmotions
+        else -> emptySet()
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
+        // 제목
         Text(
-            text = "산책을 시작하세요",
+            text = "산책 전 나의 마음은 어떤가요?",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp),
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         if (!permissionsGranted) {
             Text(
                 text = "걸음 수 측정과 위치 추적을 위해 권한이 필요합니다",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 16.dp),
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
             )
         }
 
+        // 감정 선택 그리드
+        EmotionGrid(
+            selectedEmotions = selectedEmotions,
+            onEmotionToggle = { emotionType ->
+                viewModel.toggleEmotion(emotionType)
+            },
+        )
+
+        // 다음 버튼
         Button(
-            onClick = onStartClick,
-            enabled = permissionsGranted,
+            onClick = onNextClick,
+            enabled = permissionsGranted && selectedEmotions.isNotEmpty(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (selectedEmotions.isNotEmpty()) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            ),
         ) {
-            Text("산책 시작")
+            Text(
+                text = "다음",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
         }
+    }
+}
+
+/**
+ * 감정 선택 그리드
+ */
+@Composable
+private fun EmotionGrid(
+    selectedEmotions: Set<EmotionType>,
+    onEmotionToggle: (EmotionType) -> Unit,
+) {
+    // 이미지에 표시된 감정들을 그룹화
+    val positiveEmotions = listOf(
+        EmotionType.HAPPY to "기쁘다",
+        EmotionType.JOYFUL to "행복하다",
+        EmotionType.LIGHT_FOOTED to "발걸음이 가볍다",
+        EmotionType.EXCITED to "신난다",
+        EmotionType.THRILLED to "설레인다",
+    )
+
+    val negativeEmotions = listOf(
+        EmotionType.TIRED to "지친다",
+        EmotionType.SAD to "슬프다",
+        EmotionType.DEPRESSED to "우울하다",
+        EmotionType.SLUGGISH to "축축 처진다",
+        EmotionType.MANY_THOUGHTS to "생각이 많다",
+        EmotionType.COMPLEX_MIND to "머릿속이 복잡하다",
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // 긍정적 감정들
+        EmotionRow(
+            emotions = positiveEmotions,
+            selectedEmotions = selectedEmotions,
+            onEmotionToggle = onEmotionToggle,
+        )
+
+        // 부정적 감정들
+        EmotionRow(
+            emotions = negativeEmotions,
+            selectedEmotions = selectedEmotions,
+            onEmotionToggle = onEmotionToggle,
+        )
+    }
+}
+
+/**
+ * 감정 행 (여러 개의 감정 버튼을 한 줄에 배치)
+ */
+@Composable
+private fun EmotionRow(
+    emotions: List<Pair<EmotionType, String>>,
+    selectedEmotions: Set<EmotionType>,
+    onEmotionToggle: (EmotionType) -> Unit,
+) {
+    // 그리드 레이아웃: 2열 또는 3열로 배치
+    val rows = emotions.chunked(2) // 2개씩 묶어서 행으로 만듦
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        rows.forEach { rowEmotions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                rowEmotions.forEach { (emotionType, label) ->
+                    EmotionButton(
+                        emotionType = emotionType,
+                        label = label,
+                        isSelected = selectedEmotions.contains(emotionType),
+                        onClick = { onEmotionToggle(emotionType) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                // 홀수 개일 경우 빈 공간 추가
+                if (rowEmotions.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 감정 버튼
+ */
+@Composable
+private fun EmotionButton(
+    emotionType: EmotionType,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        // 이미지에 따라 색상 구분 (긍정적 감정: 회색, 부정적 감정: 연한 파란색)
+        when (emotionType) {
+            EmotionType.HAPPY,
+            EmotionType.JOYFUL,
+            EmotionType.LIGHT_FOOTED,
+            EmotionType.EXCITED,
+            EmotionType.THRILLED,
+            -> MaterialTheme.colorScheme.surfaceVariant
+
+            else -> Color(0xFFB3E5FC) // 연한 파란색
+        }
+    }
+
+    val textColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .background(
+                color = backgroundColor,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
     }
 }
 
@@ -221,6 +416,9 @@ private fun WalkingView(
     debugInfo: team.swyp.sdu.presentation.viewmodel.WalkingUiState.DebugInfo?,
     onStopClick: () -> Unit,
 ) {
+    // Lottie 애니메이션 재생 상태 관리
+    var isLottiePlaying by remember { mutableStateOf(true) }
+
     Column(
         modifier =
             Modifier
@@ -228,6 +426,43 @@ private fun WalkingView(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Lottie 애니메이션 카드
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // Lottie 애니메이션 뷰
+                LottieAnimationView(
+                   // 나중에 URL로 변경 예정
+                    isPlaying = isLottiePlaying,
+                    size = 200.dp,
+                )
+
+                // 일시정지/재생 버튼
+                Button(
+                    onClick = { isLottiePlaying = !isLottiePlaying },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = if (isLottiePlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isLottiePlaying) "일시정지" else "재생",
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isLottiePlaying) "일시정지" else "재생",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+        }
+
         // 걸음 수 표시 카드
         Card(
             modifier = Modifier.fillMaxWidth(),

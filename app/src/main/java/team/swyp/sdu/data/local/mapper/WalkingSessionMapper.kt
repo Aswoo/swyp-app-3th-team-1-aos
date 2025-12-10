@@ -2,6 +2,7 @@ package team.swyp.sdu.data.local.mapper
 
 import team.swyp.sdu.data.local.entity.WalkingSessionEntity
 import team.swyp.sdu.data.model.ActivityStats
+import team.swyp.sdu.data.model.Emotion
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.domain.service.ActivityType
@@ -34,6 +35,7 @@ object WalkingSessionMapper {
             totalDistance = session.totalDistance,
             activityStatsJson = json.encodeToString(session.activityStats),
             primaryActivity = session.primaryActivity?.name,
+            emotionsJson = json.encodeToString(session.emotions),
             isSynced = isSynced,
         )
 
@@ -64,6 +66,13 @@ object WalkingSessionMapper {
                 }
             }
 
+        val emotions =
+            try {
+                json.decodeFromString<List<Emotion>>(entity.emotionsJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+
         return WalkingSession(
             startTime = entity.startTime,
             endTime = entity.endTime,
@@ -72,6 +81,7 @@ object WalkingSessionMapper {
             totalDistance = entity.totalDistance,
             activityStats = activityStats,
             primaryActivity = primaryActivity,
+            emotions = emotions,
         )
     }
 }

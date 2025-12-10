@@ -2,6 +2,7 @@ package team.swyp.sdu.data.local.database
 
 import androidx.room.TypeConverter
 import team.swyp.sdu.data.model.ActivityStats
+import team.swyp.sdu.data.model.Emotion
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.domain.service.ActivityType
 import kotlinx.serialization.encodeToString
@@ -52,5 +53,16 @@ class Converters {
             } catch (e: Exception) {
                 null
             }
+        }
+
+    @TypeConverter
+    fun fromEmotionList(value: List<Emotion>): String = json.encodeToString(value)
+
+    @TypeConverter
+    fun toEmotionList(value: String): List<Emotion> =
+        try {
+            json.decodeFromString<List<Emotion>>(value)
+        } catch (e: Exception) {
+            emptyList()
         }
 }

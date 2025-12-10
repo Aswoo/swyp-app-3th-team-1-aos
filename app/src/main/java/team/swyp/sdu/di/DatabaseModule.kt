@@ -2,9 +2,13 @@ package team.swyp.sdu.di
 
 import android.content.Context
 import androidx.room.Room
+import team.swyp.sdu.data.local.dao.AppliedItemDao
+import team.swyp.sdu.data.local.dao.PurchasedItemDao
 import team.swyp.sdu.data.local.dao.WalkingSessionDao
 import team.swyp.sdu.data.local.database.AppDatabase
+import team.swyp.sdu.data.repository.CosmeticItemRepositoryImpl
 import team.swyp.sdu.data.repository.WalkingSessionRepository
+import team.swyp.sdu.domain.repository.CosmeticItemRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,4 +45,21 @@ object DatabaseModule {
     @Singleton
     fun provideWalkingSessionRepository(walkingSessionDao: WalkingSessionDao): WalkingSessionRepository =
         WalkingSessionRepository(walkingSessionDao)
+
+    @Provides
+    @Singleton
+    fun providePurchasedItemDao(database: AppDatabase): PurchasedItemDao = database.purchasedItemDao()
+
+    @Provides
+    @Singleton
+    fun provideAppliedItemDao(database: AppDatabase): AppliedItemDao = database.appliedItemDao()
+
+    @Provides
+    @Singleton
+    fun provideCosmeticItemRepository(
+        purchasedItemDao: PurchasedItemDao,
+        appliedItemDao: AppliedItemDao,
+        billingManager: team.swyp.sdu.data.remote.billing.BillingManager,
+    ): CosmeticItemRepository =
+        CosmeticItemRepositoryImpl(purchasedItemDao, appliedItemDao, billingManager)
 }

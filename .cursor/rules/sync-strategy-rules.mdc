@@ -159,3 +159,4 @@ if (unsyncedCount > 0) {
 - Show sync status to user
 - Provide manual sync button
 - Do NOT delete local data if sync fails
+

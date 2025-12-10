@@ -26,6 +26,7 @@ data class ActivityStats(
  * @param totalDistance 총 이동 거리 (미터)
  * @param activityStats 활동 상태별 통계 리스트
  * @param primaryActivity 주요 활동 상태 (가장 많이 한 활동)
+ * @param emotions 감정 기록 리스트
  */
 @Parcelize
 @Serializable
@@ -37,6 +38,7 @@ data class WalkingSession(
     val totalDistance: Float = 0f,
     val activityStats: List<ActivityStats> = emptyList(),
     val primaryActivity: ActivityType? = null,
+    val emotions: List<Emotion> = emptyList(),
 ) : Parcelable {
     /**
      * 산책 시간 (초)

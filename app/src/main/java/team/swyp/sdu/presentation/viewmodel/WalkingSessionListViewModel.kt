@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.repository.WalkingSessionRepository
+import team.swyp.sdu.utils.WalkingTestData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +59,41 @@ class WalkingSessionListViewModel
                     // 삭제 후 자동으로 리스트가 업데이트됨 (Flow)
                 } catch (e: Exception) {
                     Timber.e(e, "세션 삭제 실패: ID=$sessionId")
+                }
+            }
+        }
+
+        /**
+         * 11월 더미 데이터 생성 및 저장
+         * 이미 11월 데이터가 있으면 생성하지 않습니다.
+         */
+        fun generateNovemberTestData() {
+            viewModelScope.launch {
+                try {
+                    // 기존 세션 확인 (현재 UI 상태에서 확인)
+                    val currentSessions = (_uiState.value as? WalkingSessionListUiState.Success)?.sessions ?: emptyList()
+                    val hasNovemberData = currentSessions.any { session ->
+                        val sessionDate = java.time.Instant.ofEpochMilli(session.startTime)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        sessionDate.monthValue == 11
+                    }
+                    
+                    // 11월 데이터가 없으면 생성
+                    if (!hasNovemberData) {
+                        val novemberSessions = WalkingTestData.generateNovemberSessions()
+                        Timber.d("11월 더미 데이터 생성 시작: ${novemberSessions.size}개 세션")
+                        
+                        novemberSessions.forEach { session ->
+                            walkingSessionRepository.saveSession(session)
+                        }
+                        
+                        Timber.d("11월 더미 데이터 저장 완료: ${novemberSessions.size}개 세션")
+                    } else {
+                        Timber.d("11월 데이터가 이미 존재하여 생성하지 않습니다")
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "11월 더미 데이터 생성 실패")
                 }
             }
         }

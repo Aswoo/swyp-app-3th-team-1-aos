@@ -92,8 +92,20 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(64.dp))
 
-            // 로딩 상태
-            if (uiState is LoginUiState.Loading) {
+            // 이미 로그인된 경우: 버튼 숨기고 즉시 다음 화면
+            if (isLoggedIn) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "로그인 상태 확인 중...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            } else if (uiState is LoginUiState.Loading) {
+                // 로그인 진행 중
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
                 )
@@ -151,3 +163,4 @@ fun LoginScreen(
         }
     }
 }
+

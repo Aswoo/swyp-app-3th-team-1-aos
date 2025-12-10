@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,20 @@ fun MainScreen(
                             selected = selectedTabIndex == 2,
                             onClick = { selectedTabIndex = 2 },
                             text = { Text("캘린더") },
+                        )
+                    }
+                    // 상점 버튼
+                    IconButton(
+                        onClick = {
+                            navController.navigate(Screen.Shop.route)
+                        },
+                        modifier = Modifier.padding(end = 4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "상점",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     // 로그아웃 버튼

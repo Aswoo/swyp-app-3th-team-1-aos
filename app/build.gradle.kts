@@ -111,6 +111,9 @@ dependencies {
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
 
+    // Lottie
+    implementation(libs.lottie.compose)
+
     // Timber - 로깅
     implementation(libs.timber)
 
@@ -149,6 +152,9 @@ dependencies {
 
     // Naver OAuth SDK
     implementation(libs.naver.oauth)
+
+    // Google Play Billing
+    implementation(libs.billing.ktx)
 
     // JUnit 4 (기존 호환성)
     testImplementation(libs.junit)

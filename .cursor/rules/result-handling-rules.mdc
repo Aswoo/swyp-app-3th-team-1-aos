@@ -64,3 +64,4 @@ when (val state = uiState) {
 - Keep Result wrapping at Repository layer
 - Handle all states with `when` expression in UI
 - Do NOT nest Result types
+

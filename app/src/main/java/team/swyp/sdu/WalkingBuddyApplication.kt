@@ -5,8 +5,14 @@ import com.kakao.sdk.common.KakaoSdk
 import com.kakao.vectormap.KakaoMapSdk
 import com.navercorp.nid.NidOAuth
 import com.navercorp.nid.core.data.datastore.NidOAuthInitializingCallback
+import dagger.hilt.EntryPoint
+import dagger.hilt.EntryPoints
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import team.swyp.sdu.data.remote.billing.BillingManager
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
 class WalkingBuddyApplication : Application() {
@@ -46,6 +52,22 @@ class WalkingBuddyApplication : Application() {
             },
         )
 
+        // Google Play Billing 초기화
+        // Hilt가 완전히 초기화된 후에 주입받아야 하므로 EntryPoint 사용
+        val entryPoint = EntryPoints.get(this, BillingEntryPoint::class.java)
+        val billingManager = entryPoint.billingManager()
+        billingManager.initialize()
+        Timber.d("Google Play Billing 초기화 완료")
+
         Timber.d("WalkingBuddyApplication onCreate")
+    }
+
+    /**
+     * BillingManager를 주입받기 위한 EntryPoint
+     */
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface BillingEntryPoint {
+        fun billingManager(): BillingManager
     }
 }

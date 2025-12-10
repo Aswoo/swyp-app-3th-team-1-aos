@@ -29,3 +29,4 @@ alwaysApply: true
 - Implement lazy initialization
 - Process heavy tasks in background (use `Dispatchers.IO`, see [coroutine-rules.mdc](mdc:.cursor/rules/coroutine-rules.mdc))
 - Optimize screen transitions
+

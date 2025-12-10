@@ -7,10 +7,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import team.swyp.sdu.data.model.LocationPoint
+import team.swyp.sdu.ui.screens.LoginScreen
 import team.swyp.sdu.ui.screens.MainScreen
 import team.swyp.sdu.ui.screens.PokemonDetailScreen
 import team.swyp.sdu.ui.screens.PokemonSearchScreen
 import team.swyp.sdu.ui.screens.RouteDetailScreen
+import team.swyp.sdu.ui.screens.ShopScreen
 import team.swyp.sdu.ui.screens.WalkingResultScreen
 import team.swyp.sdu.ui.screens.WalkingScreen
 import kotlinx.serialization.encodeToString
@@ -19,6 +21,8 @@ import kotlinx.serialization.json.Json
 sealed class Screen(
     val route: String,
 ) {
+    data object Login : Screen("login")
+
     data object Main : Screen("main")
 
     data object Search : Screen("pokemon_search")
@@ -39,16 +43,37 @@ sealed class Screen(
             return "route_detail/$json"
         }
     }
+
+    data object Shop : Screen("shop")
 }
 
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Main.route,
+        startDestination = Screen.Login.route,
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Main.route) {
+                        // 로그인 화면을 백 스택에서 제거
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(Screen.Main.route) {
             MainScreen(navController = navController)
+        }
+
+        composable(Screen.Shop.route) {
+            ShopScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+            )
         }
 
         composable(Screen.Search.route) {

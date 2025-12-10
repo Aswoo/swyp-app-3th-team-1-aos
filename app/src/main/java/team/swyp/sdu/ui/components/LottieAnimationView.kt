@@ -1,0 +1,72 @@
+package team.swyp.sdu.ui.components
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import team.swyp.sdu.R
+import timber.log.Timber
+
+/**
+ * Lottie 애니메이션 뷰 컴포넌트
+ *
+ * @param animationUrl Lottie 파일의 URL (나중에 URL로 변경 가능)
+ * @param isPlaying 재생 중인지 여부
+ * @param modifier Modifier
+ * @param size 애니메이션 크기 (기본값: 200.dp)
+ * @param speed 재생 속도 (기본값: 1.0f)
+ */
+@Composable
+fun LottieAnimationView(
+    modifier: Modifier = Modifier,
+    size: Dp = 200.dp,
+    isPlaying: Boolean = true,
+    speed: Float = 1f
+) {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(R.raw.walking_avocado)
+    )
+
+    // ⭐ composition 로딩되기 전 animate 호출 금지
+    if (composition == null) {
+        return
+    }
+
+    val progress by animateLottieCompositionAsState(
+        composition = composition,
+        iterations = if (isPlaying) LottieConstants.IterateForever else 1,
+        isPlaying = isPlaying,
+        speed = speed
+    )
+
+    Timber.d("progress=$progress isPlaying=$isPlaying")
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+

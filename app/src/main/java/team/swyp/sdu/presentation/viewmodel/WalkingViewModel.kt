@@ -8,6 +8,8 @@ import android.content.IntentFilter
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import team.swyp.sdu.data.model.ActivityStats
+import team.swyp.sdu.data.model.Emotion
+import team.swyp.sdu.data.model.EmotionType
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.repository.WalkingSessionRepository
@@ -45,8 +47,18 @@ class WalkingViewModel
         private val accelerometerManager: AccelerometerManager,
         private val walkingSessionRepository: WalkingSessionRepository,
     ) : AndroidViewModel(application) {
-        private val _uiState = MutableStateFlow<WalkingUiState>(WalkingUiState.Initial)
+        private val _uiState = MutableStateFlow<WalkingUiState>(
+            WalkingUiState.EmotionSelection(selectedEmotions = emptySet()),
+        )
         val uiState: StateFlow<WalkingUiState> = _uiState.asStateFlow()
+
+        // 선택된 감정 리스트
+        private val selectedEmotions = mutableSetOf<EmotionType>()
+
+        init {
+            // 초기 상태를 감정 선택 상태로 설정
+            _uiState.value = WalkingUiState.EmotionSelection(selectedEmotions = emptySet())
+        }
 
         // Location 리스트를 StateFlow로 노출 (Shared ViewModel을 위한)
         private val _locations = MutableStateFlow<List<LocationPoint>>(emptyList())
@@ -93,6 +105,27 @@ class WalkingViewModel
         private var movementStartTime: Long = 0L // 움직임 시작 시간
 
         /**
+         * 감정 선택/해제
+         */
+        fun toggleEmotion(emotionType: EmotionType) {
+            if (selectedEmotions.contains(emotionType)) {
+                selectedEmotions.remove(emotionType)
+            } else {
+                selectedEmotions.add(emotionType)
+            }
+            // UI 상태 업데이트
+            val currentState = _uiState.value
+            if (currentState is WalkingUiState.EmotionSelection || currentState is WalkingUiState.Initial) {
+                _uiState.value = WalkingUiState.EmotionSelection(selectedEmotions = selectedEmotions.toSet())
+            }
+        }
+
+        /**
+         * 선택된 감정 리스트 반환
+         */
+        fun getSelectedEmotions(): Set<EmotionType> = selectedEmotions.toSet()
+
+        /**
          * 산책 시작
          */
         fun startWalking() {
@@ -102,7 +135,17 @@ class WalkingViewModel
             }
 
             val startTime = System.currentTimeMillis()
-            currentSession = WalkingSession(startTime = startTime)
+            // 선택된 감정들을 Emotion 리스트로 변환
+            val emotions = selectedEmotions.map { emotionType ->
+                Emotion(
+                    type = emotionType,
+                    timestamp = startTime,
+                )
+            }
+            currentSession = WalkingSession(
+                startTime = startTime,
+                emotions = emotions,
+            )
             locationPoints.clear()
             _locations.value = emptyList()
 
@@ -1039,9 +1082,10 @@ class WalkingViewModel
             estimatedStepsPerSecond = 0f
             lastAcceleration = 0f
             movementStartTime = 0L
+            selectedEmotions.clear()
 
-            // UI 상태를 Initial로 초기화
-            _uiState.value = WalkingUiState.Initial
+            // UI 상태를 감정 선택 상태로 초기화
+            _uiState.value = WalkingUiState.EmotionSelection(selectedEmotions = emptySet())
 
             Timber.d("WalkingViewModel 상태 초기화 완료")
         }
@@ -1138,9 +1182,16 @@ class WalkingViewModel
  */
 sealed interface WalkingUiState {
     /**
-     * 초기 상태
+     * 초기 상태 (감정 선택 전)
      */
     data object Initial : WalkingUiState
+
+    /**
+     * 감정 선택 상태
+     */
+    data class EmotionSelection(
+        val selectedEmotions: Set<EmotionType>,
+    ) : WalkingUiState
 
     /**
      * 산책 중

@@ -602,10 +602,14 @@ class LocationTrackingService : Service() {
                 NotificationChannel(
                     CHANNEL_ID,
                     "위치 추적",
-                    NotificationManager.IMPORTANCE_DEFAULT, // IMPORTANCE_LOW는 알림이 표시되지 않을 수 있음
+                    NotificationManager.IMPORTANCE_LOW, // 진동 없이 조용히 표시
                 ).apply {
                     description = "산책 중 위치 추적 알림"
                     setShowBadge(false) // 배지 표시 안 함
+                    enableVibration(false) // 진동 비활성화
+                    enableLights(false) // LED 비활성화
+                    setSound(null, null) // 사운드 비활성화
+                    vibrationPattern = longArrayOf(0) // 진동 패턴 없음
                 }
 
             val notificationManager =
@@ -673,25 +677,23 @@ class LocationTrackingService : Service() {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT) // PRIORITY_LOW는 알림이 표시되지 않을 수 있음
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setVibrate(longArrayOf(0)) // 진동 비활성화
+            .setDefaults(0) // 기본 사운드, 진동, LED 비활성화
+            .setSilent(true) // 사운드 비활성화
             .build()
     }
 
     /**
      * 알림 업데이트
+     * 내용이 실제로 변경될 때만 업데이트하여 불필요한 알림 업데이트를 방지합니다.
      */
     private fun updateNotification(
         stepCount: Int,
         distance: Float,
         duration: Long,
     ) {
-        currentStepCount = stepCount
-        currentDistance = distance
-        currentDuration = duration
-
-        if (isTracking) {
-            val notification = createNotificationWithData(stepCount, distance, duration)
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, notification)
-        }
+        // 내용 변경 여부와 상관없이 추가 알림 업데이트를 하지 않음 (진동 완전 차단)
+        // Foreground 서비스 유지용으로 onStartCommand의 startForeground 알림만 사용
+        return
     }
 }

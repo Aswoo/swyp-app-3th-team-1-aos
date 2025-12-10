@@ -116,3 +116,4 @@ class LiveChatViewModel { ... }     // WRONG
 - **Framework**: Jetpack Compose
 - **Architecture**: MVVM + Clean Architecture
 - **File Coverage**: Write all parts without omission
+
