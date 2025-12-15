@@ -29,3 +29,5 @@ object MissionProgressMapper {
             lastUpdatedAt = entity.lastUpdatedAt,
         )
 }
+
+

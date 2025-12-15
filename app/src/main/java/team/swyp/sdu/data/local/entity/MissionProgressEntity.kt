@@ -15,3 +15,5 @@ data class MissionProgressEntity(
     val missionCompleted: Boolean,
     val lastUpdatedAt: Long,
 )
+
+

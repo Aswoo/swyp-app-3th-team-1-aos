@@ -252,3 +252,5 @@ class CosmeticItemRepositoryImpl @Inject constructor(
 
 **결론**: 메타데이터와 리소스 URL을 완전히 분리하여 URL 노출을 방지합니다.
 
+
+

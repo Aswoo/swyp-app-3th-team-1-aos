@@ -51,7 +51,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!-- 리다이렉트 URI: "kakaodd4a75c8aa122d46a52c64492a973b63://oauth" -->
                 <data android:host="oauth"
-                    android:scheme="kakao68c990d0dffd2c76950df08fc29f42a0" />
+                    android:scheme="kakao42a206965aff02858c74267290ba5ab6" />
             </intent-filter>
         </activity>
 

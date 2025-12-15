@@ -386,3 +386,5 @@ class CosmeticItemViewModel @Inject constructor(
 
 **결론**: Signed URL의 만료 시간 때문에 매번 이미지를 다운로드하는 것이 아닙니다. 이미지는 캐싱되고, URL만 갱신합니다!
 
+
+

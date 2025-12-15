@@ -15,3 +15,5 @@ interface MissionProgressRepository {
 
     suspend fun clearProgress(date: LocalDate): Result<Unit>
 }
+
+

@@ -123,6 +123,20 @@ fun LoginScreen(
                         onClick = { viewModel.loginWithNaver(context, naverLoginLauncher) },
                     )
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 로그아웃 버튼
+                    Button(
+                        onClick = { viewModel.logout() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    ) {
+                        Text("로그아웃")
+                    }
+
                     if (uiState is LoginUiState.Error) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -137,4 +151,6 @@ fun LoginScreen(
         }
     }
 }
+
+
 

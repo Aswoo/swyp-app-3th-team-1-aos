@@ -70,8 +70,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun WalkingScreen(
     viewModel: WalkingViewModel = hiltViewModel(),
-    onNavigateToRouteDetail: (List<team.swyp.sdu.data.model.LocationPoint>) -> Unit = {},
-    onNavigateToResult: () -> Unit = {},
+    onNavigateToFinish: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -152,7 +151,7 @@ fun WalkingScreen(
                     },
                     onStopClick = {
                         viewModel.stopWalking()
-                        onNavigateToResult()
+                        onNavigateToFinish()
                     },
                 )
             }

@@ -16,3 +16,5 @@ data class AppliedItemEntity(
     val productId: String,
 )
 
+
+

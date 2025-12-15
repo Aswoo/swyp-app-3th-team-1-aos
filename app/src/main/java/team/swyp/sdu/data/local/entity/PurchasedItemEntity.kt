@@ -22,3 +22,5 @@ data class PurchasedItemEntity(
     val isConsumed: Boolean = false,
 )
 
+
+

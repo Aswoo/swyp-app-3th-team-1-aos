@@ -26,16 +26,16 @@ class WalkingBuddyApplication : Application() {
 
         // Kakao SDK 초기화
         // AndroidManifest.xml의 meta-data에서 앱 키를 읽어옴
-        val kakaoAppKey = "68c990d0dffd2c76950df08fc29f42a0"
+        val kakaoAppKey = "42a206965aff02858c74267290ba5ab6"
         KakaoSdk.init(this, kakaoAppKey)
 
         // KakaoMap SDK 초기화
         KakaoMapSdk.init(this, kakaoAppKey)
 
         // Naver OAuth SDK 초기화
-        val naverClientId = "Y8Pez_IEsxqJPCCA9fQe"
-        val naverClientSecret = "AmtwieLa57"
-        val naverClientName = "SWYP"
+        val naverClientId = "pqYCAiLlppKm8_M3VnNA"
+        val naverClientSecret = "V_NACUpG7I"
+        val naverClientName = "walkit"
         NidOAuth.initialize(
             this,
             naverClientId,

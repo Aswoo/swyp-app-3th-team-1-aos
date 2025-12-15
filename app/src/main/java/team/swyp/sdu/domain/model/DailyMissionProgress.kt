@@ -12,3 +12,5 @@ data class DailyMissionProgress(
     val missionCompleted: Boolean = false,
     val lastUpdatedAt: Long = System.currentTimeMillis(),
 )
+
+

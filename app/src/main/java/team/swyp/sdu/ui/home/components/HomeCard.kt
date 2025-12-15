@@ -185,6 +185,7 @@ fun GoalCard(
 fun MissionCard(
     mission: HomeMission,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Card(
         modifier = modifier,
@@ -196,7 +197,8 @@ fun MissionCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .clickableNoRipple(onClick),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

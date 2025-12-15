@@ -44,3 +44,5 @@ interface AppliedItemDao {
     suspend fun deleteAll()
 }
 
+
+

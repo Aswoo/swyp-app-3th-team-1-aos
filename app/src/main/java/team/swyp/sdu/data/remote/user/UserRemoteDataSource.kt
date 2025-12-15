@@ -25,6 +25,15 @@ class UserRemoteDataSource @Inject constructor(
                 clearedCount = 0,
                 point = 0,
                 goalKmPerWeek = 20.0,
+                birthYear = 1990,
+                goal =
+                    team.swyp.sdu.data.remote.user.dto.RemoteGoalDto(
+                        periodType = "WEEK",
+                        targetSessions = 3,
+                        targetSteps = 30000,
+                        progressSessions = 1,
+                        progressSteps = 8500,
+                    ),
             )
         return stub.toDomain()
     }

@@ -114,21 +114,19 @@ class CalendarViewModel @Inject constructor(
                         }
                     if (hasNovDec) {
                         Timber.d("Dummy data skipped: early-December data already exists")
-                        "더미 데이터가 이미 존재합니다"
+                    
                     } else {
                         val decemberRange = WalkingTestData.generateDecemberRangeSessions()
                         val todaySession = WalkingTestData.generateSessionForDate(LocalDate.now())
                         val all = decemberRange + todaySession
                         Timber.d("Dummy data generating: decRange=${decemberRange.size}, today=1")
                         all.forEach { walkingSessionRepository.saveSession(it) }
-                        "더미 ${all.size}건 삽입 완료 (12월1~11 + 오늘)"
                     }
                 } catch (e: Exception) {
                     Timber.e(e, "Dummy data generation failed")
                     "실패: ${e.message ?: "알 수 없는 오류"}"
                 }
             }
-            _dummyMessage.value = result
         }
     }
 
@@ -180,3 +178,5 @@ class CalendarViewModel @Inject constructor(
         return start to end
     }
 }
+
+

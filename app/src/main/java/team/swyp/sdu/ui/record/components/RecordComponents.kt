@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,9 +47,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -60,9 +62,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import team.swyp.sdu.data.model.Emotion
 import team.swyp.sdu.data.model.EmotionType
+import team.swyp.sdu.ui.components.RouteThumbnail
+import team.swyp.sdu.utils.computeRouteDistanceMeters
 
 @Composable
-fun HeaderRow(onDummyClick: () -> Unit) {
+fun HeaderRow(
+    onDummyClick: () -> Unit,
+    onStartOnboarding: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -73,7 +80,7 @@ fun HeaderRow(onDummyClick: () -> Unit) {
             repeat(3) { CircleAvatar(label = "", selected = false) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DummyButton(onClick = onDummyClick)
+            StartOnboardingButton(onClick = onStartOnboarding)
             IconButton(onClick = { /* 검색 */ }) {
                 Icon(Icons.Default.Search, contentDescription = "검색")
             }
@@ -85,13 +92,18 @@ fun HeaderRow(onDummyClick: () -> Unit) {
 }
 
 @Composable
-private fun DummyButton(onClick: () -> Unit) {
+private fun StartOnboardingButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.height(40.dp),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
     ) {
-        Text(text = "더미 추가", style = MaterialTheme.typography.labelLarge)
+        Text(text = "온보딩", style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -196,6 +208,16 @@ fun DaySection(
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val currentIndex by remember {
+        derivedStateOf { listState.firstVisibleItemIndex.coerceAtMost((sessions.size - 1).coerceAtLeast(0)) }
+    }
+    val totalDistanceMeters by remember(sessions) {
+        mutableStateOf(
+            sessions.fold(0.0) { acc, session ->
+                acc + computeRouteDistanceMeters(session.locations).coerceAtLeast(session.totalDistance.toDouble())
+            },
+        )
+    }
 
     LaunchedEffect(sessions.size) {
         // 새 데이터 들어오면 맨 앞으로
@@ -219,7 +241,7 @@ fun DaySection(
             listOf(
                 StatItem("산책 시간", "${stats.durationHours}시간 ${stats.durationMinutesRemainder}분"),
                 StatItem("걸음 수", "%,d".format(stats.steps)),
-                StatItem("총 거리", "— km"),
+                StatItem("총 거리", "%.2f km".format(totalDistanceMeters / 1000.0)),
             ),
         )
 
@@ -234,6 +256,27 @@ fun DaySection(
             ) {
                 itemsIndexed(sessions) { index, session ->
                     SessionCard(session, index + 1, sessions.size)
+                }
+            }
+            if (sessions.size > 1) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    repeat(sessions.size) { i ->
+                        Box(
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(if (i == currentIndex) 10.dp else 8.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (i == currentIndex) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                    ),
+                        )
+                    }
                 }
             }
         }
@@ -253,6 +296,33 @@ private fun SessionCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = "기록 $position/$total", style = MaterialTheme.typography.labelLarge)
             HorizontalDivider(color = Color(0xFFE0E0E0))
+            if (session.locations.size >= 2) {
+                RouteThumbnail(
+                    locations = session.locations,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.6f),
+                    height = 0.dp, // height 무시하고 aspectRatio로 결정
+                )
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.6f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFE6EAF2)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "경로 데이터가 부족합니다",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
             Text(
                 text = "걸음 수: %,d".format(session.stepCount),
                 style = MaterialTheme.typography.bodyMedium,
@@ -262,7 +332,10 @@ private fun SessionCard(
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                text = "거리: %.2f km".format(session.totalDistance / 1000f),
+                text = "거리: %.2f km".format(
+                    computeRouteDistanceMeters(session.locations)
+                        .coerceAtLeast(session.totalDistance.toDouble()) / 1000.0,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -370,6 +443,7 @@ private fun StatCard(
     }
 }
 
+
 @Composable
 private fun GoalCheckRow() {
     Surface(
@@ -463,11 +537,11 @@ private fun MonthNavigator(
         }
         Spacer(modifier = Modifier.weight(1f))
         IconButton(onClick = onNextMonth, modifier = Modifier.size(28.dp)) {
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "다음 달",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "다음 달",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
         }
     }
 }
@@ -647,3 +721,5 @@ private fun calculateMonthlyStatsForRecord(
         focusScore = focusScore,
     )
 }
+
+

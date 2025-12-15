@@ -27,3 +27,5 @@ inline fun <T> Result<T>.onError(action: (Throwable, String?) -> Unit): Result<T
     if (this is Result.Error) action(exception, message)
     return this
 }
+
+

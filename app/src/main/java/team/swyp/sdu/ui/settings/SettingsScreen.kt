@@ -76,6 +76,22 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
+                text = "목표",
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            Button(
+                onClick = {
+                    navController.navigate(Screen.GoalManagement.route)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("내 목표관리")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
                 text = "계정",
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -95,4 +111,5 @@ fun SettingsScreen(
         }
     }
 }
+
 

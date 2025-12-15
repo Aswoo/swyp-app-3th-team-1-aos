@@ -62,3 +62,5 @@ data class CharacterCustomization(
     val necklace: CosmeticItem? = null,
 ) : Parcelable
 
+
+

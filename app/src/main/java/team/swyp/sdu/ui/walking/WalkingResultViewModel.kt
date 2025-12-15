@@ -60,3 +60,5 @@ class WalkingResultViewModel @Inject constructor(
     }
 }
 
+
+

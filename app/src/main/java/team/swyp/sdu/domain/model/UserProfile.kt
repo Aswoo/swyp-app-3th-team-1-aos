@@ -18,6 +18,14 @@ data class UserProfile(
     val point: Int = 0,
     @SerialName("goal_km_per_week")
     val goalKmPerWeek: Double = 0.0,
+    @SerialName("birth_year")
+    val birthYear: Int? = null,
+    @SerialName("goal_info")
+    val goalInfo: GoalInfo? = null,
+    @SerialName("goal_progress_sessions")
+    val goalProgressSessions: Int = 0,
+    @SerialName("goal_progress_steps")
+    val goalProgressSteps: Int = 0,
 ) {
     companion object {
         val EMPTY =
@@ -27,6 +35,12 @@ data class UserProfile(
                 clearedCount = 0,
                 point = 0,
                 goalKmPerWeek = 0.0,
+                birthYear = null,
+                goalInfo = null,
+                goalProgressSessions = 0,
+                goalProgressSteps = 0,
             )
     }
 }
+
+

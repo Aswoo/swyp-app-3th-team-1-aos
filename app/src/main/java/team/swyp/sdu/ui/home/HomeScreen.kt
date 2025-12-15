@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +31,7 @@ import team.swyp.sdu.ui.home.components.TopPill
 import team.swyp.sdu.ui.home.components.LevelChip
 import team.swyp.sdu.ui.home.components.WeeklyRecordCard
 import team.swyp.sdu.ui.home.components.HomeMission
+import team.swyp.sdu.ui.home.components.EmotionRecordCard
 
 /**
  * 홈 화면 (요약/캐릭터/미션/주간 기록)
@@ -36,6 +40,7 @@ import team.swyp.sdu.ui.home.components.HomeMission
 fun HomeScreen(
     onClickWalk: () -> Unit,
     onClickGoal: () -> Unit,
+    onClickMission: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,6 +61,7 @@ fun HomeScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 16.dp)
                 .padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -105,6 +111,7 @@ fun HomeScreen(
                         MissionCard(
                             mission = mission,
                             modifier = Modifier.weight(1f),
+                            onClick = onClickMission,
                         )
                     }
                     if (rowMissions.size == 1) {
@@ -153,6 +160,23 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+
+        // 나의 감정 기록 섹션
+        when (uiState) {
+            is HomeUiState.Success -> {
+                (uiState as HomeUiState.Success).weeklyEmotionSummary?.let { summary ->
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "나의 감정 기록",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        EmotionRecordCard(emotionSummary = summary)
+                    }
+                }
+            }
+            else -> {}
         }
     }
 }

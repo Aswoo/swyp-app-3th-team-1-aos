@@ -247,3 +247,5 @@ AsyncImage(
 
 **결론**: Signed URL은 **백엔드에서 생성**하고, Firebase Storage Rules는 **접근 권한을 제어**합니다.
 
+
+

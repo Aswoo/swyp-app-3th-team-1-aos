@@ -17,6 +17,10 @@ data class RemoteUserDto(
     val point: Int,
     @SerializedName("goal_km_per_week")
     val goalKmPerWeek: Double,
+    @SerializedName("birth_year")
+    val birthYear: Int? = null,
+    @SerializedName("goal")
+    val goal: RemoteGoalDto? = null,
 ) {
     fun toDomain(): UserProfile =
         UserProfile(
@@ -25,5 +29,11 @@ data class RemoteUserDto(
             clearedCount = clearedCount,
             point = point,
             goalKmPerWeek = goalKmPerWeek,
+            birthYear = birthYear,
+            goalInfo = goal?.toGoalInfo(),
+            goalProgressSessions = goal?.progressSessions ?: 0,
+            goalProgressSteps = goal?.progressSteps ?: 0,
         )
 }
+
+

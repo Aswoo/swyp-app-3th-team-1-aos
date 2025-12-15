@@ -14,5 +14,13 @@ data class UserEntity(
     val clearedCount: Int,
     val point: Int,
     val goalKmPerWeek: Double,
+    val birthYear: Int? = null,
+    val goalPeriodType: String? = null,
+    val targetSessions: Int = 0,
+    val targetSteps: Int = 0,
+    val goalProgressSessions: Int = 0,
+    val goalProgressSteps: Int = 0,
     val updatedAt: Long = System.currentTimeMillis(),
 )
+
+

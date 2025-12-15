@@ -2,7 +2,11 @@ package team.swyp.sdu.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import team.swyp.sdu.data.api.ApiService
+import team.swyp.sdu.data.api.auth.AuthApi
+import team.swyp.sdu.data.remote.auth.TokenProvider
+import team.swyp.sdu.data.remote.auth.TokenProviderImpl
+import team.swyp.sdu.data.remote.interceptor.AuthInterceptor
+import team.swyp.sdu.data.remote.interceptor.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,6 +31,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideTokenProvider(
+        tokenProviderImpl: TokenProviderImpl,
+    ): TokenProvider = tokenProviderImpl
+
+    @Provides
+    @Singleton
     fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -34,10 +44,28 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(loggingInterceptor: HttpLoggingInterceptor): OkHttpClient =
+    fun provideAuthInterceptor(
+        tokenProvider: TokenProvider,
+    ): AuthInterceptor = AuthInterceptor(tokenProvider)
+
+    @Provides
+    @Singleton
+    fun provideTokenAuthenticator(
+        tokenProvider: TokenProvider,
+    ): TokenAuthenticator = TokenAuthenticator(tokenProvider)
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor,
+        authInterceptor: AuthInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
+    ): OkHttpClient =
         OkHttpClient
             .Builder()
+            .addInterceptor(authInterceptor) // 로깅 전에 추가 (순서 중요)
             .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator) // 401 응답 처리
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -45,14 +73,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @Named("jsonplaceholder")
+    @Named("walkit")
     fun provideRetrofit(
         okHttpClient: OkHttpClient,
         gson: Gson,
     ): Retrofit =
         Retrofit
             .Builder()
-            .baseUrl("https://jsonplaceholder.typicode.com/") // 무료 테스트 API (JSONPlaceholder)
+            .baseUrl(" https://walkit-shop-swyp-11.shop/") // walkit server
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -73,13 +101,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideApiService(
-        @Named("jsonplaceholder") retrofit: Retrofit,
-    ): ApiService = retrofit.create(ApiService::class.java)
+    fun provideAuthApi(
+        @Named("walkit") retrofit: Retrofit,
+    ): AuthApi = retrofit.create(AuthApi::class.java)
 
-    @Provides
-    @Singleton
-    fun providePokemonApiService(
-        @Named("pokeapi") pokemonRetrofit: Retrofit,
-    ): team.swyp.sdu.data.api.PokemonApiService = pokemonRetrofit.create(team.swyp.sdu.data.api.PokemonApiService::class.java)
+    // TODO: PokemonApiService가 필요하면 구현 후 주석 해제
+    // @Provides
+    // @Singleton
+    // fun providePokemonApiService(
+    //     @Named("pokeapi") pokemonRetrofit: Retrofit,
+    // ): team.swyp.sdu.data.api.PokemonApiService = pokemonRetrofit.create(team.swyp.sdu.data.api.PokemonApiService::class.java)
 }

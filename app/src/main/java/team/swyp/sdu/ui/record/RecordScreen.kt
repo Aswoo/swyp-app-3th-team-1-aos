@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +42,7 @@ private enum class RecordTab { Month, Week, Day }
 fun RecordScreen(
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel(),
+    onStartOnboarding: () -> Unit = {},
 ) {
     val dummyMessage by viewModel.dummyMessage.collectAsStateWithLifecycle()
     val dayStats by viewModel.dayStats.collectAsStateWithLifecycle()
@@ -52,6 +56,7 @@ fun RecordScreen(
         modifier = modifier,
         dummyMessage = dummyMessage,
         onDummyClick = { viewModel.generateDummyData() },
+        onStartOnboarding = onStartOnboarding,
         dayStats = dayStats,
         weekStats = weekStats,
         monthStats = monthStats,
@@ -68,6 +73,7 @@ private fun RecordScreenContent(
     modifier: Modifier = Modifier,
     dummyMessage: String?,
     onDummyClick: () -> Unit,
+    onStartOnboarding: () -> Unit,
     dayStats: WalkAggregate,
     weekStats: WalkAggregate,
     monthStats: WalkAggregate,
@@ -84,10 +90,11 @@ private fun RecordScreenContent(
         modifier =
             modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { HeaderRow(onDummyClick = onDummyClick) }
+        item { HeaderRow(onDummyClick = onDummyClick, onStartOnboarding = onStartOnboarding) }
 
         item {
             TabRow(
@@ -159,3 +166,5 @@ private fun RecordScreenContent(
         item { Spacer(modifier = Modifier.height(12.dp)) }
     }
 }
+
+

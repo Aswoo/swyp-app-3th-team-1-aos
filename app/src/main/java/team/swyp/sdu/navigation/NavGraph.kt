@@ -12,6 +12,9 @@ import team.swyp.sdu.ui.splash.SplashScreen
 import team.swyp.sdu.ui.screens.MainScreen
 import team.swyp.sdu.ui.screens.RouteDetailScreen
 import team.swyp.sdu.ui.screens.ShopScreen
+import team.swyp.sdu.ui.walking.EmotionRecordStep
+import team.swyp.sdu.ui.walking.EmotionSelectionStep
+import team.swyp.sdu.ui.walking.WalkingFinishStep
 import team.swyp.sdu.ui.walking.WalkingResultScreen
 import team.swyp.sdu.ui.walking.WalkingScreen
 import team.swyp.sdu.ui.calendar.CalendarScreen
@@ -38,6 +41,12 @@ sealed class Screen(
 
     data object Walking : Screen("walking")
 
+    data object WalkingFinishStep : Screen("walking_finish_step")
+
+    data object EmotionSelectionStep : Screen("emotion_selection_step")
+
+    data object EmotionRecordStep : Screen("emotion_record_step")
+
     data object WalkingResult : Screen("walking_result")
 
     data object RouteDetail : Screen("route_detail/{locationsJson}") {
@@ -52,6 +61,10 @@ sealed class Screen(
     data object Onboarding : Screen("onboarding")
 
     data object Friends : Screen("friends")
+
+    data object GoalManagement : Screen("goal_management")
+
+    data object Mission : Screen("mission")
 }
 
 @Composable
@@ -83,7 +96,14 @@ fun NavGraph(
         composable(Screen.Main.route) {
             MainScreen(
                 navController = navController,
-                userViewModel = userViewModel,
+            )
+        }
+
+        composable(Screen.Walking.route) {
+            WalkingScreen(
+                onNavigateToFinish = {
+                    navController.navigate(Screen.WalkingFinishStep.route)
+                },
             )
         }
 
@@ -112,13 +132,56 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Walking.route) {
-            WalkingScreen(
-                onNavigateToRouteDetail = { locations ->
-                    navController.navigate(Screen.RouteDetail.createRoute(locations))
+        composable(Screen.WalkingFinishStep.route) {
+            WalkingFinishStep(
+                onClose = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Main.route) { inclusive = false }
+                    }
                 },
-                onNavigateToResult = {
-                    navController.navigate(Screen.WalkingResult.route)
+                onSkip = {
+                    navController.navigate(Screen.WalkingResult.route) {
+                        popUpTo(Screen.Main.route) { inclusive = false }
+                    }
+                },
+                onRecordEmotion = {
+                    navController.navigate(Screen.EmotionSelectionStep.route)
+                },
+            )
+        }
+
+        composable(Screen.EmotionSelectionStep.route) {
+            val viewModel: team.swyp.sdu.presentation.viewmodel.WalkingViewModel =
+                androidx.hilt.navigation.compose.hiltViewModel()
+
+            EmotionSelectionStep(
+                viewModel = viewModel,
+                onNext = {
+                    navController.navigate(Screen.EmotionRecordStep.route)
+                },
+                onClose = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Main.route) { inclusive = false }
+                    }
+                },
+            )
+        }
+
+        composable(Screen.EmotionRecordStep.route) {
+            val viewModel: team.swyp.sdu.presentation.viewmodel.WalkingViewModel =
+                androidx.hilt.navigation.compose.hiltViewModel()
+
+            EmotionRecordStep(
+                viewModel = viewModel,
+                onNext = {
+                    navController.navigate(Screen.WalkingResult.route) {
+                        popUpTo(Screen.Main.route) { inclusive = false }
+                    }
+                },
+                onClose = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Main.route) { inclusive = false }
+                    }
                 },
             )
         }
@@ -167,6 +230,22 @@ fun NavGraph(
 
             RouteDetailScreen(
                 locations = locations,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+
+        composable(Screen.GoalManagement.route) {
+            team.swyp.sdu.ui.goal.GoalManagementScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+
+        composable(Screen.Mission.route) {
+            team.swyp.sdu.ui.mission.MissionScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },

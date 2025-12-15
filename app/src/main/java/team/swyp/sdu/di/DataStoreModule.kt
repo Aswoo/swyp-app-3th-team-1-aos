@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import team.swyp.sdu.data.local.datastore.AuthDataStore
+import team.swyp.sdu.data.local.datastore.OnboardingDataStore
 
 /**
  * DataStore 관련 DI 모듈
@@ -33,4 +34,12 @@ object DataStoreModule {
     fun provideAuthDataStore(
         dataStore: DataStore<Preferences>,
     ): AuthDataStore = AuthDataStore(dataStore)
+
+    @Provides
+    @Singleton
+    fun provideOnboardingDataStore(
+        dataStore: DataStore<Preferences>,
+    ): OnboardingDataStore = OnboardingDataStore(dataStore)
 }
+
+

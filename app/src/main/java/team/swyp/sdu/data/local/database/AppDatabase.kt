@@ -30,7 +30,7 @@ import team.swyp.sdu.data.local.entity.WalkingSessionEntity
         MissionProgressEntity::class,
         UserEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

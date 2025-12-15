@@ -55,6 +55,16 @@ class WalkingViewModel
         // 선택된 감정 리스트
         private val selectedEmotions = mutableSetOf<EmotionType>()
 
+        // 감정 기록 상태
+        private val _emotionValue = MutableStateFlow<Float>(0.5f) // 슬라이더 값 (0.0 ~ 1.0)
+        val emotionValue: StateFlow<Float> = _emotionValue.asStateFlow()
+
+        private val _emotionPhotoUri = MutableStateFlow<android.net.Uri?>(null)
+        val emotionPhotoUri: StateFlow<android.net.Uri?> = _emotionPhotoUri.asStateFlow()
+
+        private val _emotionText = MutableStateFlow<String>("")
+        val emotionText: StateFlow<String> = _emotionText.asStateFlow()
+
         init {
             // 초기 상태를 감정 선택 상태로 설정
             _uiState.value = WalkingUiState.EmotionSelection(selectedEmotions = emptySet())
@@ -129,6 +139,27 @@ class WalkingViewModel
          * 선택된 감정 리스트 반환
          */
         fun getSelectedEmotions(): Set<EmotionType> = selectedEmotions.toSet()
+
+        /**
+         * 감정 선택 슬라이더 값 업데이트
+         */
+        fun setEmotionValue(value: Float) {
+            _emotionValue.value = value.coerceIn(0f, 1f)
+        }
+
+        /**
+         * 감정 기록 사진 URI 설정
+         */
+        fun setEmotionPhotoUri(uri: android.net.Uri?) {
+            _emotionPhotoUri.value = uri
+        }
+
+        /**
+         * 감정 기록 텍스트 설정
+         */
+        fun setEmotionText(text: String) {
+            _emotionText.value = text
+        }
 
         /**
          * 산책 시작
@@ -1148,6 +1179,11 @@ class WalkingViewModel
             lastAcceleration = 0f
             movementStartTime = 0L
             selectedEmotions.clear()
+
+            // 감정 기록 상태 초기화
+            _emotionValue.value = 0.5f
+            _emotionPhotoUri.value = null
+            _emotionText.value = ""
 
             // UI 상태를 감정 선택 상태로 초기화
             _uiState.value = WalkingUiState.EmotionSelection(selectedEmotions = emptySet())

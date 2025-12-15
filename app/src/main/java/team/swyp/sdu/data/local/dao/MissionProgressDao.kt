@@ -21,3 +21,5 @@ interface MissionProgressDao {
     @Query("DELETE FROM mission_progress WHERE date = :date")
     suspend fun deleteByDate(date: String)
 }
+
+
