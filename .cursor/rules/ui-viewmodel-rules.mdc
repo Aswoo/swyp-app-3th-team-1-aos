@@ -76,6 +76,125 @@ class LiveChatViewModel { ... }     // WRONG
 - Apply state hoisting pattern
 - Use `remember` and `derivedStateOf` for expensive calculations
 
+## Screen Composable Pattern
+
+### ViewModel Injection and State Collection
+
+**✅ Correct Pattern**: Use `hiltViewModel()` and `collectAsStateWithLifecycle()`
+
+```kotlin
+@Composable
+fun WalkingRoute(
+    viewModel: WalkingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    WalkingScreen(
+        uiState = uiState,
+        onStartClick = viewModel::onStart,
+        onStopClick = viewModel::onStop,
+    )
+}
+```
+
+**Key Rules:**
+1. **ViewModel Injection**: Always use `hiltViewModel()` as default parameter value
+   - Allows dependency injection via Hilt
+   - Enables testing by passing mock ViewModel
+   - Example: `viewModel: WalkingViewModel = hiltViewModel()`
+
+2. **State Collection**: Always use `collectAsStateWithLifecycle()` for StateFlow
+   - Automatically handles lifecycle (pauses when stopped, resumes when started)
+   - Prevents memory leaks
+   - Example: `val uiState by viewModel.uiState.collectAsStateWithLifecycle()`
+
+3. **Method References**: Use method references (`::`) for ViewModel callbacks
+   - Cleaner syntax: `viewModel::onStart` instead of `{ viewModel.onStart() }`
+   - Better performance (no lambda allocation)
+   - Example: `onStartClick = viewModel::onStart`
+
+4. **Screen Separation**: Separate screen composable from UI component
+   - Screen composable: Handles ViewModel injection and state collection
+   - UI component: Receives state and callbacks as parameters
+   - Enables reusability and testability
+
+**❌ Incorrect Patterns:**
+
+```kotlin
+// WRONG: ViewModel injection without default parameter
+@Composable
+fun WalkingRoute() {
+    val viewModel = hiltViewModel<WalkingViewModel>() // Missing default parameter
+    // ...
+}
+
+// WRONG: Using collectAsState() instead of collectAsStateWithLifecycle()
+@Composable
+fun WalkingRoute(
+    viewModel: WalkingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState() // Missing lifecycle awareness
+    // ...
+}
+
+// WRONG: Business logic in UI composable
+@Composable
+fun WalkingRoute(
+    viewModel: WalkingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    Button(onClick = {
+        // WRONG: Business logic in UI
+        viewModel.uiState.value = SomeState()
+    }) {
+        Text("Button")
+    }
+}
+
+// WRONG: Lambda instead of method reference
+@Composable
+fun WalkingRoute(
+    viewModel: WalkingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    WalkingScreen(
+        uiState = uiState,
+        onStartClick = { viewModel.onStart() }, // Use ::onStart instead
+    )
+}
+```
+
+### Screen Structure Template
+
+```kotlin
+@Composable
+fun FeatureScreen(
+    viewModel: FeatureViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit = {},
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    FeatureScreenContent(
+        uiState = uiState,
+        onAction1 = viewModel::handleAction1,
+        onAction2 = viewModel::handleAction2,
+        onNavigateBack = onNavigateBack,
+    )
+}
+
+@Composable
+private fun FeatureScreenContent(
+    uiState: FeatureUiState,
+    onAction1: () -> Unit,
+    onAction2: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    // UI implementation
+}
+```
+
 ## Navigation
 - Use Compose Navigation
 - Support Deep Links

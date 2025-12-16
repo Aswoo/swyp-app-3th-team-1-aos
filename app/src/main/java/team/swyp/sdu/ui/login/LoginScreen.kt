@@ -37,17 +37,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.swyp.sdu.R
 import team.swyp.sdu.presentation.viewmodel.LoginUiState
 import team.swyp.sdu.presentation.viewmodel.LoginViewModel
+import team.swyp.sdu.presentation.viewmodel.OnboardingViewModel
 import team.swyp.sdu.ui.login.components.LoginButton
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel(),
+    onboardingViewModel: OnboardingViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val onboardingCompleted by onboardingViewModel.isCompleted.collectAsStateWithLifecycle(initialValue = false)
 
     val naverLoginLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -55,8 +59,15 @@ fun LoginScreen(
         viewModel.handleNaverLoginResult(result)
     }
 
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) onLoginSuccess()
+    LaunchedEffect(isLoggedIn, onboardingCompleted) {
+        if (isLoggedIn) {
+            // 로그인 성공 시 온보딩 완료 여부 확인
+            if (onboardingCompleted) {
+                onLoginSuccess() // 온보딩 완료 -> 메인으로
+            } else {
+                onNavigateToOnboarding() // 온보딩 미완료 -> 온보딩으로
+            }
+        }
     }
 
     Box(

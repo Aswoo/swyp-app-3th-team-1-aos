@@ -65,6 +65,10 @@ sealed class Screen(
     data object GoalManagement : Screen("goal_management")
 
     data object Mission : Screen("mission")
+
+    data object MyPage : Screen("mypage")
+
+    data object UserInfoManagement : Screen("user_info_management")
 }
 
 @Composable
@@ -86,6 +90,12 @@ fun NavGraph(
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Screen.Main.route) {
+                        // 로그인 화면을 백 스택에서 제거
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
                         // 로그인 화면을 백 스택에서 제거
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }

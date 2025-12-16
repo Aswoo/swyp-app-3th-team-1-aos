@@ -88,6 +88,31 @@ data class WalkingSession(
         val activityDistance = activityStats.firstOrNull { it.type == type }?.distance ?: 0f
         return activityDistance / totalDistance
     }
+
+    /**
+     * 평균 보폭 계산 (미터)
+     */
+    fun averageStride(): Float {
+        if (stepCount == 0) return 0f
+        return totalDistance / stepCount
+    }
+
+    /**
+     * 평균 속도 계산 (km/h)
+     */
+    fun averageSpeedKmh(): Float {
+        val durationSeconds = duration / 1000f
+        if (durationSeconds == 0f) return 0f
+        val speedMs = totalDistance / durationSeconds // m/s
+        return speedMs * 3.6f // km/h
+    }
+
+    /**
+     * 의미 있는 GPS 이동이 있었는지 확인
+     */
+    fun hasMeaningfulGpsMovement(): Boolean {
+        return totalDistance >= 10f // 10m 이상 이동
+    }
 }
 
 /**
