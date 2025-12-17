@@ -1,18 +1,17 @@
 package team.swyp.sdu.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -20,15 +19,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import team.swyp.sdu.navigation.Screen
 import team.swyp.sdu.ui.home.HomeScreen
+import team.swyp.sdu.ui.mypage.MyPageRoute
+import team.swyp.sdu.ui.mypage.MyPageScreen
+import team.swyp.sdu.ui.mypage.settings.SettingsScreen
 import team.swyp.sdu.ui.record.RecordScreen
-import team.swyp.sdu.ui.walking.WalkingScreen
 
 /**
  * 메인 탭 화면: 각 피처 화면 호출만 담당
@@ -38,15 +39,37 @@ fun MainScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+
+
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+
+    // navigation 상태에 따라 탭 결정
+    val calculatedTabIndex = when (currentRoute) {
+        Screen.GoalManagement.route,
+        Screen.UserInfoManagement.route,
+        Screen.NotificationSettings.route -> 2 // 마이페이지 탭
+        else -> selectedTabIndex
+    }
+
+    // 계산된 탭 인덱스 사용 (navigation에서 돌아올 때)
+    val currentTabIndex = if (calculatedTabIndex != selectedTabIndex && calculatedTabIndex in 0..2) {
+        calculatedTabIndex
+    } else {
+        selectedTabIndex
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
+                    selected = currentTabIndex == 0,
+                    onClick = {
+                        selectedTabIndex = 0
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Home,
@@ -56,8 +79,10 @@ fun MainScreen(
                     label = { Text("홈") },
                 )
                 NavigationBarItem(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
+                    selected = currentTabIndex == 1,
+                    onClick = {
+                        selectedTabIndex = 1
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.List,
@@ -67,8 +92,10 @@ fun MainScreen(
                     label = { Text("산책 기록") },
                 )
                 NavigationBarItem(
-                    selected = selectedTabIndex == 2,
-                    onClick = { selectedTabIndex = 2 },
+                    selected = currentTabIndex == 2,
+                    onClick = {
+                        selectedTabIndex = 2
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -87,7 +114,7 @@ fun MainScreen(
                     .fillMaxSize()
                     .windowInsetsPadding(WindowInsets.navigationBars),
         ) {
-            when (selectedTabIndex) {
+            when (currentTabIndex) {
                 0 -> HomeScreen(
                     onClickWalk = {
                         // WalkingScreen으로 네비게이션
@@ -106,8 +133,18 @@ fun MainScreen(
                 )
 
                 2 -> {
-                    team.swyp.sdu.ui.settings.SettingsScreen(
-                        navController = navController,
+                    MyPageRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateUserInfoEdit = {
+                            navController.navigate(Screen.UserInfoManagement.route)
+                        },
+                        onNavigateGoalManagement = {
+                            navController.navigate(Screen.GoalManagement.route)
+                        },
+                        onNavigateCharacterEdit = {},
+                        onNavigateNotificationSetting = {
+                            navController.navigate(Screen.NotificationSettings.route)
+                        }
                     )
                 }
             }

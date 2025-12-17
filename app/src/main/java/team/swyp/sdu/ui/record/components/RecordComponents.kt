@@ -2,37 +2,41 @@ package team.swyp.sdu.ui.record.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,89 +44,62 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import team.swyp.sdu.presentation.viewmodel.CalendarViewModel.WalkAggregate
 import team.swyp.sdu.data.model.WalkingSession
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
-import team.swyp.sdu.data.model.Emotion
-import team.swyp.sdu.data.model.EmotionType
-import team.swyp.sdu.ui.components.RouteThumbnail
-import team.swyp.sdu.utils.computeRouteDistanceMeters
 
+/**
+ * 헤더 행 컴포넌트
+ */
 @Composable
 fun HeaderRow(
     onDummyClick: () -> Unit,
     onStartOnboarding: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CircleAvatar(label = "ME", selected = true)
-            repeat(3) { CircleAvatar(label = "", selected = false) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StartOnboardingButton(onClick = onStartOnboarding)
-            IconButton(onClick = { /* 검색 */ }) {
-                Icon(Icons.Default.Search, contentDescription = "검색")
+        Text(
+            text = "기록",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Row {
+            Button(
+                onClick = onDummyClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Gray,
+                ),
+            ) {
+                Text("더미 데이터")
             }
-            IconButton(onClick = { /* 알림 */ }) {
-                Icon(Icons.Default.Notifications, contentDescription = "알림")
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = onStartOnboarding,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Blue,
+                ),
+            ) {
+                Text("온보딩 시작")
             }
         }
     }
 }
 
-@Composable
-private fun StartOnboardingButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.height(40.dp),
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ),
-    ) {
-        Text(text = "온보딩", style = MaterialTheme.typography.labelLarge)
-    }
-}
-
-@Composable
-private fun CircleAvatar(label: String, selected: Boolean) {
-    Box(
-        modifier =
-            Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(if (selected) Color(0xFFE0E0E0) else Color(0xFFD9D9D9)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (label.isNotBlank()) {
-            Text(text = label, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
+/**
+ * 월간 섹션 컴포넌트
+ */
 @Composable
 fun MonthSection(
     stats: WalkAggregate,
@@ -134,11 +111,19 @@ fun MonthSection(
         sessions.flatMap { session ->
             session.emotions.map { emotion ->
                 val date = java.time.Instant.ofEpochMilli(emotion.timestamp)
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(java.time.ZoneId.systemDefault())
                     .toLocalDate()
                 date to emotion
             }
         }.groupBy({ it.first }, { it.second })
+    }
+
+    val sessionsByDate = remember(sessions) {
+        sessions.groupBy { session ->
+            java.time.Instant.ofEpochMilli(session.startTime)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+        }
     }
 
     val monthlyStats = remember(sessions, currentMonth) {
@@ -155,6 +140,7 @@ fun MonthSection(
         CalendarGridRecord(
             yearMonth = currentMonth,
             emotionsByDate = emotionsByDate,
+            sessionsByDate = sessionsByDate,
             modifier = Modifier.padding(horizontal = 4.dp),
         )
 
@@ -174,6 +160,9 @@ fun MonthSection(
     }
 }
 
+/**
+ * 주간 섹션 컴포넌트
+ */
 @Composable
 fun WeekSection(stats: WalkAggregate) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -198,6 +187,9 @@ fun WeekSection(stats: WalkAggregate) {
     }
 }
 
+/**
+ * 일간 섹션 컴포넌트
+ */
 @Composable
 fun DaySection(
     stats: WalkAggregate,
@@ -219,295 +211,77 @@ fun DaySection(
         )
     }
 
-    LaunchedEffect(sessions.size) {
-        // 새 데이터 들어오면 맨 앞으로
-        scope.launch { listState.scrollToItem(0) }
-    }
-
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        DateNavigator(
-            dateLabel = dateLabel,
-            onPrev = {
-                onPrev()
-                scope.launch { listState.scrollToItem(0) }
-            },
-            onNext = {
-                onNext()
-                scope.launch { listState.scrollToItem(0) }
-            },
-        )
-
-        StatsRow(
-            listOf(
-                StatItem("산책 시간", "${stats.durationHours}시간 ${stats.durationMinutesRemainder}분"),
-                StatItem("걸음 수", "%,d".format(stats.steps)),
-                StatItem("총 거리", "%.2f km".format(totalDistanceMeters / 1000.0)),
-            ),
-        )
-
-        if (sessions.isEmpty()) {
-            SectionCard(height = 160) {
-                Text(text = "오늘 산책 기록이 없습니다", style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            LazyRow(
-                state = listState,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                itemsIndexed(sessions) { index, session ->
-                    SessionCard(session, index + 1, sessions.size)
-                }
-            }
-            if (sessions.size > 1) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    repeat(sessions.size) { i ->
-                        Box(
-                            modifier =
-                                Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .size(if (i == currentIndex) 10.dp else 8.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (i == currentIndex) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                    ),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SessionCard(
-    session: WalkingSession,
-    position: Int,
-    total: Int,
-) {
-    Card(
-        modifier = Modifier.width(260.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F1F1)),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = "기록 $position/$total", style = MaterialTheme.typography.labelLarge)
-            HorizontalDivider(color = Color(0xFFE0E0E0))
-            if (session.locations.size >= 2) {
-                RouteThumbnail(
-                    locations = session.locations,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.6f),
-                    height = 0.dp, // height 무시하고 aspectRatio로 결정
-                )
-            } else {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.6f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFE6EAF2)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "경로 데이터가 부족합니다",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Text(
-                text = "걸음 수: %,d".format(session.stepCount),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = "소요 시간: ${((session.endTime ?: session.startTime) - session.startTime) / 60000}분",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = "거리: %.2f km".format(
-                    computeRouteDistanceMeters(session.locations)
-                        .coerceAtLeast(session.totalDistance.toDouble()) / 1000.0,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionCard(
-    modifier: Modifier = Modifier,
-    height: Int = 260,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(height.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFFF1F1F1)),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        content = content,
-    )
-}
-
-@Composable
-private fun EmotionCard(
-    title: String,
-    emotion: String,
-    desc: String,
-) {
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp)),
-        color = Color(0xFFF1F1F1),
-    ) {
+        // 날짜 네비게이터
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(
+            IconButton(onClick = onPrev) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "이전 날짜")
+            }
+
+            Text(
+                text = dateLabel,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            IconButton(onClick = onNext) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, "다음 날짜")
+            }
+        }
+
+        // 통계 카드들
+        StatsRow(
+            listOf(
+                StatItem("걸음 수", "%,d".format(stats.steps)),
+                StatItem("산책 시간", "${stats.durationHours}시간 ${stats.durationMinutesRemainder}분"),
+                StatItem("거리", "%.2f km".format(totalDistanceMeters / 1000)),
+            ),
+        )
+
+        // 세션 목록
+        if (sessions.isNotEmpty()) {
+            LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = emotion,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(text = desc, style = MaterialTheme.typography.bodyMedium)
-            }
-            Box(
-                modifier =
-                    Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "🙂", style = MaterialTheme.typography.headlineSmall)
-            }
-        }
-    }
-}
-
-private data class StatItem(val title: String, val value: String)
-
-@Composable
-private fun StatsRow(items: List<StatItem>) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items.forEach { item ->
-            StatCard(title = item.title, value = item.value, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun StatCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier =
-            modifier
-                .clip(RoundedCornerShape(14.dp)),
-        color = Color(0xFFF1F1F1),
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-
-@Composable
-private fun GoalCheckRow() {
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp)),
-        color = Color(0xFFF1F1F1),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(text = "이번주 목표 성공", style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf("월", "화", "수", "목", "금", "토", "일").forEachIndexed { index, label ->
-                    val checked = index % 2 == 0
-                    GoalDot(label = label, checked = checked)
+                items(sessions.size) { index ->
+                    val session = sessions[index]
+                    SessionItem(
+                        session = session,
+                        isSelected = index == currentIndex,
+                        onClick = {
+                            scope.launch {
+                                listState.animateScrollToItem(index)
+                            }
+                        },
+                    )
                 }
             }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "이 날짜에 산책 기록이 없습니다.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                )
+            }
         }
     }
 }
 
-@Composable
-private fun GoalDot(label: String, checked: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(
-            modifier =
-                Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(if (checked) Color(0xFF2C2C2C) else Color.White)
-                    .clickable { },
-            contentAlignment = Alignment.Center,
-        ) {
-            if (checked) Text("✓", color = Color.White, fontWeight = FontWeight.Bold)
-        }
-        Text(text = label, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-@Composable
-private fun DateNavigator(
-    dateLabel: String,
-    onPrev: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "<",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.clickable(onClick = onPrev),
-        )
-        Text(text = dateLabel, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(
-            text = ">",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.clickable(onClick = onNext),
-        )
-    }
-}
-
+/**
+ * 월 네비게이터 컴포넌트
+ */
 @Composable
 private fun MonthNavigator(
     currentMonth: YearMonth,
@@ -515,41 +289,34 @@ private fun MonthNavigator(
     onNextMonth: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onPreviousMonth, modifier = Modifier.size(28.dp)) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "이전 달",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        IconButton(onClick = onPreviousMonth) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "이전 달")
         }
-        Spacer(modifier = Modifier.weight(1f))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN)),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onNextMonth, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "다음 달",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+
+        Text(
+            text = currentMonth.format(DateTimeFormatter.ofPattern("yyyy년 MM월")),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        IconButton(onClick = onNextMonth) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, "다음 달")
         }
     }
 }
 
+/**
+ * 캘린더 그리드 컴포넌트
+ */
 @Composable
 private fun CalendarGridRecord(
     yearMonth: YearMonth,
-    emotionsByDate: Map<LocalDate, List<Emotion>>,
+    emotionsByDate: Map<LocalDate, List<team.swyp.sdu.data.model.Emotion>>,
+    sessionsByDate: Map<LocalDate, List<WalkingSession>>,
     modifier: Modifier = Modifier,
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -571,7 +338,7 @@ private fun CalendarGridRecord(
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 8.dp),
-                    textAlign = TextAlign.Center,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
         }
@@ -594,10 +361,12 @@ private fun CalendarGridRecord(
                         val date = yearMonth.atDay(dayIndex + 1)
                         val emotions = emotionsByDate[date] ?: emptyList()
                         val primaryEmotion = emotions.firstOrNull()
+                        val hasWalkSession = sessionsByDate[date]?.isNotEmpty() == true
 
                         CalendarDayCellRecord(
                             day = dayIndex + 1,
                             emotion = primaryEmotion,
+                            hasWalkSession = hasWalkSession,
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
@@ -618,58 +387,256 @@ private fun CalendarGridRecord(
     }
 }
 
+/**
+ * 캘린더 데이 셀 컴포넌트
+ */
 @Composable
 private fun CalendarDayCellRecord(
     day: Int,
-    emotion: Emotion?,
+    emotion: team.swyp.sdu.data.model.Emotion?,
+    hasWalkSession: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val (backgroundColor, emoji) = getMoodColorAndEmojiRecord(emotion?.type)
+    // 기본 구현: 날짜 숫자 표시
+    val (backgroundColor, _) = getMoodColorAndEmojiRecord(emotion?.type)
 
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickable(enabled = emotion != null) { },
+            .clickable(enabled = emotion != null) { /* TODO: 날짜 클릭 처리 */ },
         contentAlignment = Alignment.Center,
     ) {
-        if (emotion != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Text(
-                text = emoji,
-                fontSize = 20.sp,
+                text = day.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = if (emotion != null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                },
             )
-        } else {
+
+            // 산책 세션이 있으면 초록색 점 표시
+            if (hasWalkSession) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF4CAF50)) // Green 색상
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 감정 카드 컴포넌트
+ */
+@Composable
+fun EmotionCard(
+    title: String,
+    emotion: String,
+    desc: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF97FFB5),
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+        ) {
             Text(
-                text = "-",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = emotion,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
 }
 
-private fun getMoodColorAndEmojiRecord(emotionType: EmotionType?): Pair<Color, String> =
-    when (emotionType) {
-        EmotionType.HAPPY -> Color(0xFFFFF59D) to "😊"
-        EmotionType.JOYFUL -> Color(0xFFFFD54F) to "🤩"
-        EmotionType.LIGHT_FOOTED -> Color(0xFFA5D6A7) to "😌"
-        EmotionType.EXCITED -> Color(0xFFFFCC80) to "🤪"
-        EmotionType.THRILLED -> Color(0xFFFFAB91) to "😃"
-        EmotionType.TIRED -> Color(0xFFB0BEC5) to "😴"
-        EmotionType.SAD -> Color(0xFFB3E5FC) to "😢"
-        EmotionType.DEPRESSED -> Color(0xFF90A4AE) to "😞"
-        EmotionType.SLUGGISH -> Color(0xFFC5CAE9) to "🥱"
-        EmotionType.MANY_THOUGHTS -> Color(0xFFD1C4E9) to "🤔"
-        EmotionType.COMPLEX_MIND -> Color(0xFFFFE082) to "🤯"
-        EmotionType.CALM -> Color(0xFFAED581) to "😌"
-        EmotionType.CONTENT -> Color(0xFF81C784) to "😄"
-        EmotionType.ANXIOUS -> Color(0xFF80DEEA) to "😰"
-        EmotionType.ENERGETIC -> Color(0xFFFFF176) to "⚡"
-        EmotionType.RELAXED -> Color(0xFFA5D6A7) to "😊"
-        EmotionType.PROUD -> Color(0xFF90CAF9) to "😎"
-        null -> Color.White to "-"
+/**
+ * 통계 행 컴포넌트
+ */
+@Composable
+fun StatsRow(items: List<StatItem>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.forEach { item ->
+            Card(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp, horizontal = 12.dp),
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = item.value,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 세션 아이템 컴포넌트
+ */
+@Composable
+private fun SessionItem(
+    session: WalkingSession,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
     }
 
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "산책 세션",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "걸음 수: ${session.stepCount}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "거리: %.2f km".format(session.totalDistance / 1000),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+/**
+ * 섹션 카드 컴포넌트
+ */
+@Composable
+fun SectionCard(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * 목표 체크 행 컴포넌트
+ */
+@Composable
+fun GoalCheckRow() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFF3E0),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "주간 목표 달성률",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "70% 달성했어요!",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "완료",
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier.size(32.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 통계 아이템 데이터 클래스
+ */
+data class StatItem(
+    val title: String,
+    val value: String,
+)
+
+/**
+ * 월간 통계 데이터 클래스
+ */
 private data class MonthlyStatsRecord(
     val primaryMood: String,
     val description: String,
@@ -678,48 +645,85 @@ private data class MonthlyStatsRecord(
     val focusScore: Int,
 )
 
+/**
+ * 월간 통계 계산 함수
+ */
 private fun calculateMonthlyStatsForRecord(
     sessions: List<WalkingSession>,
     month: YearMonth,
-    emotionsByDate: Map<LocalDate, List<Emotion>>,
+    emotionsByDate: Map<LocalDate, List<team.swyp.sdu.data.model.Emotion>>,
 ): MonthlyStatsRecord {
-    val monthStart = month.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val monthStart = month.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     val monthEnd = month.atEndOfMonth().atTime(23, 59, 59)
-        .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     val monthSessions = sessions.filter { session ->
         session.startTime in monthStart..monthEnd
     }
 
-    val totalSteps = monthSessions.sumOf { it.stepCount.toLong() }.toInt()
+    val totalSteps = monthSessions.sumOf { it.stepCount }
     val sessionsCount = monthSessions.size
-
-    val emotionCounts = emotionsByDate.values.flatten()
-        .filter { emotion ->
-            val date = java.time.Instant.ofEpochMilli(emotion.timestamp)
-                .atZone(ZoneId.systemDefault()).toLocalDate()
-            date.year == month.year && date.monthValue == month.monthValue
-        }
-        .groupBy { it.type }
-        .mapValues { it.value.size }
-
-    val primaryEmotionType = emotionCounts.maxByOrNull { it.value }?.key ?: EmotionType.HAPPY
-    val primaryMood = primaryEmotionType.name
-
-    val description = "이번달 주요 감정: $primaryMood"
-    val focusScore = if (sessionsCount > 0) {
-        ((sessionsCount.toFloat() / month.lengthOfMonth().toFloat()) * 100f).toInt().coerceIn(0, 100)
+    val focusScore = if (monthSessions.isNotEmpty()) {
+        (sessionsCount * 20).coerceAtMost(100) // 간단한 계산
     } else {
         0
     }
 
+    // 주요 감정 계산 (간단 버전)
+    val allEmotions = emotionsByDate.values.flatten()
+    val primaryMood = if (allEmotions.isNotEmpty()) {
+        allEmotions.first().type.name // 간단하게 첫 번째 감정 사용
+    } else {
+        "보통"
+    }
+
     return MonthlyStatsRecord(
         primaryMood = primaryMood,
-        description = description,
+        description = "이번 달의 주요 감정입니다.",
         totalSteps = totalSteps,
         sessionsCount = sessionsCount,
         focusScore = focusScore,
     )
 }
 
+/**
+ * 감정 타입에 따른 색상과 이모지 반환
+ */
+fun getMoodColorAndEmojiRecord(emotionType: team.swyp.sdu.data.model.EmotionType?): Pair<Color, String> =
+    when (emotionType) {
+        team.swyp.sdu.data.model.EmotionType.HAPPY -> Color(0xFFFFF59D) to "😊"
+        team.swyp.sdu.data.model.EmotionType.JOYFUL -> Color(0xFFFFD54F) to "🤩"
+        team.swyp.sdu.data.model.EmotionType.CONTENT -> Color(0xFF81C784) to "😄"
+        team.swyp.sdu.data.model.EmotionType.DEPRESSED -> Color(0xFF90A4AE) to "😔"
+        team.swyp.sdu.data.model.EmotionType.TIRED -> Color(0xFFB0BEC5) to "😴"
+        team.swyp.sdu.data.model.EmotionType.ANXIOUS -> Color(0xFF80DEEA) to "😰"
+        null -> Color.White to "-"
+    }
 
+/**
+ * 경로 거리 계산 함수 (간단 버전)
+ */
+private fun computeRouteDistanceMeters(locations: List<team.swyp.sdu.data.model.LocationPoint>): Double {
+    if (locations.size < 2) return 0.0
+
+    var totalDistance = 0.0
+    for (i in 0 until locations.size - 1) {
+        val loc1 = locations[i]
+        val loc2 = locations[i + 1]
+
+        val lat1 = loc1.latitude
+        val lon1 = loc1.longitude
+        val lat2 = loc2.latitude
+        val lon2 = loc2.longitude
+
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        totalDistance += 6371000 * c // 지구 반지름 * c
+    }
+
+    return totalDistance
+}

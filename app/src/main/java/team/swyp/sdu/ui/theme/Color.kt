@@ -10,6 +10,10 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
+val White = Color(0xFFFFFFFF)
+
+val Green = Color(0xFF52CE4B)
+
 val Grey2 = Color(0xFFF9F9FA)
 val Grey3 = Color(0xFFF3F3F5)
 val Grey5 = Color(0xFFC2C3CA)
@@ -20,3 +24,6 @@ val Grey10 = Color(0xFF191919)
 val BluePrimary = Color(0xFF1D7AFC)
 val BlueSecondary = Color(0xFF84B8FF)
 val BlueTertiary = Color(0xFFE9F2FF)
+
+// Green color for toggle switch (on state)
+val GreenPrimary = Color(0xFF2ABB42)

@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import team.swyp.sdu.core.Result
 import team.swyp.sdu.domain.model.DailyMissionProgress
-import team.swyp.sdu.domain.model.UserProfile
+import team.swyp.sdu.domain.model.User
 import team.swyp.sdu.domain.repository.MissionProgressRepository
 import team.swyp.sdu.domain.repository.UserRepository
 import timber.log.Timber
@@ -31,10 +31,10 @@ class UserViewModel @Inject constructor(
 ) : ViewModel() {
     private val today = MutableStateFlow(LocalDate.now())
 
-    val userState: StateFlow<Result<UserProfile>> =
-        userRepository.userProfileFlow
-            .map { profile ->
-                profile?.let { Result.Success(it) } ?: Result.Loading
+    val userState: StateFlow<Result<User>> =
+        userRepository.userFlow
+            .map { user ->
+                user?.let { Result.Success(it) } ?: Result.Loading
             }
             .stateIn(
                 scope = viewModelScope,
@@ -51,13 +51,12 @@ class UserViewModel @Inject constructor(
                 initialValue = null,
             )
 
-    init {
-        refreshUserProfile()
-    }
+    // init에서 자동으로 refreshUser()를 호출하지 않음
+    // 필요한 곳에서 명시적으로 호출
 
-    fun refreshUserProfile() {
+    fun refreshUser() {
         viewModelScope.launch {
-            userRepository.refreshUserProfile()
+            userRepository.refreshUser()
         }
     }
 
@@ -67,7 +66,7 @@ class UserViewModel @Inject constructor(
     fun onLoginSuccess(accessToken: String, refreshToken: String?) {
         viewModelScope.launch {
             userRepository.saveAuthTokens(accessToken, refreshToken)
-            userRepository.refreshUserProfile()
+            userRepository.refreshUser()
         }
     }
 
@@ -101,5 +100,3 @@ class UserViewModel @Inject constructor(
         }
     }
 }
-
-

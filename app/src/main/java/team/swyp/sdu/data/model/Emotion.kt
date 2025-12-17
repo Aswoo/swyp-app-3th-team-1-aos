@@ -24,23 +24,14 @@ data class Emotion(
  */
 @Serializable
 enum class EmotionType {
-    HAPPY,          // 기쁘다
-    JOYFUL,         // 행복하다
-    LIGHT_FOOTED,   // 발걸음이 가볍다
-    EXCITED,        // 신난다
-    THRILLED,       // 설레인다
-    TIRED,          // 지친다
-    SAD,            // 슬프다
-    DEPRESSED,      // 우울하다
-    SLUGGISH,       // 축축 처진다
-    MANY_THOUGHTS,  // 생각이 많다
-    COMPLEX_MIND,   // 머릿속이 복잡하다
-    // 기존 감정 타입들 (하위 호환성 유지)
-    CALM,           // 평온
-    CONTENT,        // 만족
-    ANXIOUS,        // 불안
-    ENERGETIC,      // 활기참
-    RELAXED,        // 편안함
-    PROUD,          // 자랑스러움
+    // 긍정 감정
+    HAPPY,          // 기쁨
+    JOYFUL,         // 즐거움
+    CONTENT,        // 행복함
+
+    // 부정 감정
+    DEPRESSED,      // 우울함
+    TIRED,          // 지침
+    ANXIOUS         // 짜증남
 }
 

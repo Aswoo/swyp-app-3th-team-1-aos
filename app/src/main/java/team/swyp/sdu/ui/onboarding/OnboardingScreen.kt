@@ -1,26 +1,23 @@
 package team.swyp.sdu.ui.onboarding
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import team.swyp.sdu.presentation.viewmodel.OnboardingViewModel
 import team.swyp.sdu.ui.theme.WalkItTheme
+import timber.log.Timber
 
 @Composable
 fun OnboardingScreen(
@@ -28,6 +25,15 @@ fun OnboardingScreen(
     onFinish: () -> Unit = {},
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
+    val isCompleted by viewModel.isCompleted.collectAsStateWithLifecycle(initialValue = false)
+
+    // 온보딩이 완료되었으면 자동으로 완료 처리
+    LaunchedEffect(isCompleted) {
+        if (isCompleted) {
+            Timber.d("온보딩 완료 감지, 자동으로 완료 처리")
+            onFinish()
+        }
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showUnitDropdown by remember { mutableStateOf(false) }
 
@@ -47,6 +53,8 @@ fun OnboardingScreen(
                     onMarketingConsentChecked = viewModel::updateMarketingConsentChecked,
                     onNext = {
                         if (uiState.canProceed) {
+                            // 약관 동의 완료 상태 저장
+                            viewModel.saveTermsAgreement()
                             viewModel.nextStep()
                         }
                     },
@@ -54,7 +62,25 @@ fun OnboardingScreen(
                 )
                 1 -> NicknameStep(
                     value = uiState.nickname,
+                    selectedImageUri = uiState.selectedImageUri,
                     onChange = viewModel::updateNickname,
+                    onImageSelected = viewModel::updateSelectedImageUri,
+                    onNext = {
+                        if (uiState.canProceed) {
+                            viewModel.registerNickname()
+                        }
+                    },
+                    onPrev = viewModel::previousStep,
+                )
+                2 -> BirthYearStep(
+                    currentYear = uiState.birthYear,
+                    currentMonth = uiState.birthMonth,
+                    currentDay = uiState.birthDay,
+                    currentSex = uiState.sex,
+                    onYearChange = viewModel::updateBirthYear,
+                    onMonthChange = viewModel::updateBirthMonth,
+                    onDayChange = viewModel::updateBirthDay,
+                    onSexChange = viewModel::updateSex,
                     onNext = {
                         if (uiState.canProceed) {
                             viewModel.nextStep()
@@ -62,7 +88,7 @@ fun OnboardingScreen(
                     },
                     onPrev = viewModel::previousStep,
                 )
-                2 -> GoalStep(
+                3 -> GoalStep(
                     unit = uiState.unit,
                     unitMenuExpanded = showUnitDropdown,
                     onUnitClick = { showUnitDropdown = true },
@@ -75,20 +101,6 @@ fun OnboardingScreen(
                     onGoalChange = viewModel::updateGoalCount,
                     steps = uiState.stepTarget,
                     onStepsChange = viewModel::updateStepTarget,
-                    onNext = {
-                        if (uiState.canProceed) {
-                            viewModel.nextStep()
-                        }
-                    },
-                    onPrev = viewModel::previousStep,
-                )
-                3 -> BirthYearStep(
-                    currentYear = uiState.birthYear,
-                    currentMonth = uiState.birthMonth,
-                    currentDay = uiState.birthDay,
-                    onYearChange = viewModel::updateBirthYear,
-                    onMonthChange = viewModel::updateBirthMonth,
-                    onDayChange = viewModel::updateBirthDay,
                     onNext = {
                         if (uiState.canProceed) {
                             viewModel.submitOnboarding()

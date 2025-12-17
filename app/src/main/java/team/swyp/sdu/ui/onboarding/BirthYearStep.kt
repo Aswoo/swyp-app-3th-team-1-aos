@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import team.swyp.sdu.domain.model.Sex
 import team.swyp.sdu.ui.components.WheelPicker
 import team.swyp.sdu.ui.theme.WalkItTheme
 
@@ -47,9 +48,11 @@ fun BirthYearStep(
     currentYear: Int,
     currentMonth: Int,
     currentDay: Int,
+    currentSex: Sex?,
     onYearChange: (Int) -> Unit,
     onMonthChange: (Int) -> Unit,
     onDayChange: (Int) -> Unit,
+    onSexChange: (Sex) -> Unit,
     onNext: () -> Unit,
     onPrev: () -> Unit,
 ) {
@@ -62,7 +65,8 @@ fun BirthYearStep(
         } catch (e: Exception) {
             false
         }
-        yearValid && monthValid && dayValid
+        val sexValid = currentSex != null
+        yearValid && monthValid && dayValid && sexValid
     } catch (e: Exception) {
         false
     }
@@ -88,6 +92,7 @@ fun BirthYearStep(
     var showYearPicker by remember { mutableStateOf(false) }
     var showMonthPicker by remember { mutableStateOf(false) }
     var showDayPicker by remember { mutableStateOf(false) }
+    var showSexPicker by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -95,11 +100,11 @@ fun BirthYearStep(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Text(
-                text = "태어난 날짜를 선택하세요",
+                text = "출생 정보와 성별을 선택하세요",
                 style = MaterialTheme.typography.headlineSmall,
             )
 
-            // 클릭 가능한 필드 영역
+            // 출생년월일 선택 영역
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -128,6 +133,18 @@ fun BirthYearStep(
                     modifier = Modifier.weight(1f),
                 )
             }
+
+            // 성별 선택 필드
+            ClickField(
+                label = "성별",
+                value = when (currentSex) {
+                    Sex.MALE -> "남성"
+                    Sex.FEMALE -> "여성"
+                    null -> "선택하세요"
+                },
+                onClick = { showSexPicker = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             // 만 나이 표시
             Row(
@@ -246,6 +263,30 @@ fun BirthYearStep(
                 onDismiss = { showDayPicker = false },
             )
         }
+
+        // 성별 선택 바텀시트
+        if (showSexPicker) {
+            WheelPickerOverlay(
+                visible = true,
+                items = listOf("남성", "여성"),
+                initialIndex = when (currentSex) {
+                    Sex.MALE -> 0
+                    Sex.FEMALE -> 1
+                    null -> 0
+                },
+                title = "성별 선택",
+                onConfirm = { _, value ->
+                    val sex = when (value) {
+                        "남성" -> Sex.MALE
+                        "여성" -> Sex.FEMALE
+                        else -> Sex.MALE
+                    }
+                    onSexChange(sex)
+                    showSexPicker = false
+                },
+                onDismiss = { showSexPicker = false },
+            )
+        }
     }
 }
 
@@ -355,9 +396,11 @@ private fun BirthYearStepPreview() {
             currentYear = 1998,
             currentMonth = 5,
             currentDay = 15,
+            currentSex = null,
             onYearChange = {},
             onMonthChange = {},
             onDayChange = {},
+            onSexChange = {},
             onNext = {},
             onPrev = {},
         )
@@ -372,9 +415,11 @@ private fun BirthYearStepYoungPreview() {
             currentYear = 2010,
             currentMonth = 12,
             currentDay = 25,
+            currentSex = Sex.MALE,
             onYearChange = {},
             onMonthChange = {},
             onDayChange = {},
+            onSexChange = {},
             onNext = {},
             onPrev = {},
         )

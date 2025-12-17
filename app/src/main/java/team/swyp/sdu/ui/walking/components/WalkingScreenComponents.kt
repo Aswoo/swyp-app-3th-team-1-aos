@@ -55,20 +55,15 @@ fun EmotionGrid(
     onEmotionToggle: (EmotionType) -> Unit,
 ) {
     val positiveEmotions = listOf(
-        EmotionType.HAPPY to "기쁘다",
-        EmotionType.JOYFUL to "행복하다",
-        EmotionType.LIGHT_FOOTED to "발걸음이 가볍다",
-        EmotionType.EXCITED to "신난다",
-        EmotionType.THRILLED to "설레인다",
+        EmotionType.HAPPY to "기쁨",
+        EmotionType.JOYFUL to "즐거움",
+        EmotionType.CONTENT to "행복함",
     )
 
     val negativeEmotions = listOf(
-        EmotionType.TIRED to "지친다",
-        EmotionType.SAD to "슬프다",
-        EmotionType.DEPRESSED to "우울하다",
-        EmotionType.SLUGGISH to "축축 처진다",
-        EmotionType.MANY_THOUGHTS to "생각이 많다",
-        EmotionType.COMPLEX_MIND to "머릿속이 복잡하다",
+        EmotionType.DEPRESSED to "우울함",
+        EmotionType.TIRED to "지침",
+        EmotionType.ANXIOUS to "짜증남",
     )
 
     Column(
@@ -141,9 +136,7 @@ fun EmotionButton(
         when (emotionType) {
             EmotionType.HAPPY,
             EmotionType.JOYFUL,
-            EmotionType.LIGHT_FOOTED,
-            EmotionType.EXCITED,
-            EmotionType.THRILLED,
+            EmotionType.CONTENT,
             -> MaterialTheme.colorScheme.surfaceVariant
 
             else -> Color(0xFFB3E5FC)
@@ -333,3 +326,4 @@ fun getActivityColor(activity: ActivityType): Color =
         ActivityType.ON_FOOT -> Color(0xFFFF9800)
         ActivityType.UNKNOWN -> Color(0xFF9E9E9E)
     }
+

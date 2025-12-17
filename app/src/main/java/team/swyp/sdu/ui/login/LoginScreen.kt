@@ -1,6 +1,5 @@
 package team.swyp.sdu.ui.login
 
-import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import team.swyp.sdu.R
 import team.swyp.sdu.presentation.viewmodel.LoginUiState
 import team.swyp.sdu.presentation.viewmodel.LoginViewModel
-import team.swyp.sdu.presentation.viewmodel.OnboardingViewModel
+import team.swyp.sdu.ui.onboarding.OnboardingViewModel
 import team.swyp.sdu.ui.login.components.LoginButton
 
 @Composable

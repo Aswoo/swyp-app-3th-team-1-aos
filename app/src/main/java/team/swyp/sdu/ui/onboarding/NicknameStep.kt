@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,6 +27,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import team.swyp.sdu.ui.theme.WalkItTheme
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * 닉네임 입력 단계 컴포넌트
@@ -33,7 +41,9 @@ import team.swyp.sdu.ui.theme.WalkItTheme
 @Composable
 fun NicknameStep(
     value: String,
+    selectedImageUri: String?,
     onChange: (String) -> Unit,
+    onImageSelected: (String?) -> Unit,
     onNext: () -> Unit,
     onPrev: () -> Unit,
 ) {
@@ -50,15 +60,40 @@ fun NicknameStep(
             singleLine = true,
         )
 
+        // 이미지 선택 런처
+        val imagePickerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent(),
+            onResult = { uri ->
+                onImageSelected(uri?.toString())
+            }
+        )
+
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(320.dp),
+                .height(320.dp)
+                .clickable { imagePickerLauncher.launch("image/*") },
             color = Color(0xFFE6E6E6),
             shape = RoundedCornerShape(24.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("캐릭터 이미지", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (selectedImageUri != null) {
+                    // 선택된 이미지가 있으면 표시 (실제로는 Coil이나 Glide로 이미지 로드)
+                    Text("이미지 선택됨", color = MaterialTheme.colorScheme.primary)
+                } else {
+                    Text("캐릭터 이미지 선택", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                // 우측 하단에 카메라 아이콘 추가 가능
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .size(48.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
+                }
             }
         }
 
@@ -101,7 +136,9 @@ private fun NicknameStepPreview() {
     WalkItTheme {
         NicknameStep(
             value = "",
+            selectedImageUri = null,
             onChange = {},
+            onImageSelected = {},
             onNext = {},
             onPrev = {},
         )
@@ -114,7 +151,9 @@ private fun NicknameStepFilledPreview() {
     WalkItTheme {
         NicknameStep(
             value = "홍길동",
+            selectedImageUri = "content://media/picker/0/com.android.providers.media.photopicker/media/1000000018",
             onChange = {},
+            onImageSelected = {},
             onNext = {},
             onPrev = {},
         )

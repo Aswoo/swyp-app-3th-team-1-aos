@@ -5,22 +5,17 @@ import androidx.room.PrimaryKey
 
 /**
  * 사용자 캐시 Entity
+ *
+ * 새로운 서버 API 구조에 맞춘 Entity입니다.
+ * Goal 정보는 별도의 GoalEntity로 분리되었습니다.
  */
 @Entity(tableName = "user_profile")
 data class UserEntity(
     @PrimaryKey
-    val uid: String,
+    val userId: Long,
+    val imageName: String? = null,
     val nickname: String,
-    val clearedCount: Int,
-    val point: Int,
-    val goalKmPerWeek: Double,
-    val birthYear: Int? = null,
-    val goalPeriodType: String? = null,
-    val targetSessions: Int = 0,
-    val targetSteps: Int = 0,
-    val goalProgressSessions: Int = 0,
-    val goalProgressSteps: Int = 0,
+    val birthDate: String? = null,
+    val sex: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
 )
-
-

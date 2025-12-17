@@ -32,6 +32,7 @@ import team.swyp.sdu.ui.home.components.LevelChip
 import team.swyp.sdu.ui.home.components.WeeklyRecordCard
 import team.swyp.sdu.ui.home.components.HomeMission
 import team.swyp.sdu.ui.home.components.EmotionRecordCard
+import team.swyp.sdu.ui.home.components.HomeHeader
 
 /**
  * 홈 화면 (요약/캐릭터/미션/주간 기록)
@@ -45,9 +46,18 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val nickname = "닉네임"
-    val levelLabel = "새싹 Lv.3"
-    val todaySteps = 8_312
+    val nickname = when (uiState) {
+        is HomeUiState.Success -> (uiState as HomeUiState.Success).nickname
+        else -> "사용자"
+    }
+    val levelLabel = when (uiState) {
+        is HomeUiState.Success -> (uiState as HomeUiState.Success).levelLabel
+        else -> "새싹 Lv.1"
+    }
+    val todaySteps = when (uiState) {
+        is HomeUiState.Success -> (uiState as HomeUiState.Success).todaySteps
+        else -> 0
+    }
     val goalTitle = "목표명 / 달성률"
     val progressRatio = 0.68f
     val missions =
@@ -66,14 +76,11 @@ fun HomeScreen(
                 .padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            TopPill(text = "로고, 네임")
-            TopPill(text = "날씨 / 온도")
-        }
+        HomeHeader(onClickSearch = {
 
+        }, onClickAlarm = {
+
+        })
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {

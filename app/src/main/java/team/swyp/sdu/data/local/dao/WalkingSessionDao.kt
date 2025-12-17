@@ -87,4 +87,16 @@ interface WalkingSessionDao {
      */
     @Query("DELETE FROM walking_sessions")
     suspend fun deleteAll()
+
+    /**
+     * 총 걸음수 집계 (Flow로 실시간 업데이트)
+     */
+    @Query("SELECT COALESCE(SUM(stepCount), 0) FROM walking_sessions")
+    fun getTotalStepCount(): Flow<Int>
+
+    /**
+     * 총 이동거리 집계 (Flow로 실시간 업데이트, 미터 단위)
+     */
+    @Query("SELECT COALESCE(SUM(totalDistance), 0.0) FROM walking_sessions")
+    fun getTotalDistance(): Flow<Float>
 }

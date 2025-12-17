@@ -10,9 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import team.swyp.sdu.ui.theme.Grey10
 import team.swyp.sdu.ui.theme.Grey2
-import team.swyp.sdu.ui.theme.Pink40
 
 
 @Composable
@@ -24,11 +22,10 @@ fun SectionCard(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = Pink40, // color/background/white-secondary
-                shape = RoundedCornerShape(12.dp), // radius/12px
+                color = Grey2, // color/background/white-secondary
+                shape = RoundedCornerShape(8.dp), // radius/8px (Figma 디자인에 맞춤)
             )
             .padding(
-                horizontal = 16.dp, // spacing/16px
                 vertical = 12.dp, // spacing/12px
             ),
     ) {

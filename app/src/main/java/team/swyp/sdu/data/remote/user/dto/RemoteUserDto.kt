@@ -1,39 +1,46 @@
 package team.swyp.sdu.data.remote.user.dto
 
 import com.google.gson.annotations.SerializedName
-import team.swyp.sdu.domain.model.UserProfile
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import team.swyp.sdu.domain.model.User
+import team.swyp.sdu.domain.model.Sex
 
 /**
- * 사용자 API 응답 DTO (스텁)
+ * 사용자 API 응답 DTO
+ *
+ * 새로운 서버 API 구조에 맞춘 DTO입니다.
+ * Retrofit(Gson)과 kotlinx.serialization 모두 지원합니다.
  */
+@Serializable
 data class RemoteUserDto(
-    @SerializedName("uid")
-    val uid: String,
+    @SerializedName("userId")
+    @SerialName("userId")
+    val userId: Long,
+    @SerializedName("imageName")
+    @SerialName("imageName")
+    val imageName: String? = null,
     @SerializedName("nickname")
+    @SerialName("nickname")
     val nickname: String,
-    @SerializedName("cleared_count")
-    val clearedCount: Int,
-    @SerializedName("point")
-    val point: Int,
-    @SerializedName("goal_km_per_week")
-    val goalKmPerWeek: Double,
-    @SerializedName("birth_year")
-    val birthYear: Int? = null,
-    @SerializedName("goal")
-    val goal: RemoteGoalDto? = null,
+    @SerializedName("birthDate")
+    @SerialName("birthDate")
+    val birthDate: String?,
+    @SerializedName("sex")
+    @SerialName("sex")
+    val sex: String? = null,
 ) {
-    fun toDomain(): UserProfile =
-        UserProfile(
-            uid = uid,
-            nickname = nickname,
-            clearedCount = clearedCount,
-            point = point,
-            goalKmPerWeek = goalKmPerWeek,
-            birthYear = birthYear,
-            goalInfo = goal?.toGoalInfo(),
-            goalProgressSessions = goal?.progressSessions ?: 0,
-            goalProgressSteps = goal?.progressSteps ?: 0,
-        )
+    fun toDomain(): User = User(
+        userId = userId,
+        imageName = imageName,
+        nickname = nickname,
+        birthDate = birthDate,
+        sex = sex?.let { 
+            try {
+                Sex.valueOf(it)
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        },
+    )
 }
-
-

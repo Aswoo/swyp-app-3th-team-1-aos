@@ -24,9 +24,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import team.swyp.sdu.ui.theme.GreenPrimary
 import team.swyp.sdu.ui.theme.Grey10
 import team.swyp.sdu.ui.theme.Grey3
 import team.swyp.sdu.ui.theme.WalkItTheme
+import team.swyp.sdu.ui.theme.walkItTypography
 
 /**
  * 토글이 있는 메뉴 아이템 컴포넌트
@@ -76,7 +78,7 @@ fun ToggleMenuItem(
  * Figma 디자인에 맞춘 커스텀 스위치입니다.
  * - 크기: 39dp x 24dp
  * - Thumb 크기: 18dp x 18dp
- * - 배경색: Grey3 (#F3F3F5)
+ * - 배경색: 켜짐 상태 - GreenPrimary (#2ABB42), 꺼짐 상태 - Grey3 (#F3F3F5)
  * - Thumb 색상: White
  */
 @Composable
@@ -91,11 +93,13 @@ private fun CustomSwitch(
         label = "thumb_offset",
     )
 
+    val backgroundColor = if (checked) GreenPrimary else Grey3
+
     Box(
         modifier = modifier
             .size(width = 39.dp, height = 24.dp)
             .clip(RoundedCornerShape(9999.dp))
-            .background(Grey3)
+            .background(backgroundColor)
             .clickable { onCheckedChange(!checked) },
     ) {
         Box(
@@ -104,7 +108,6 @@ private fun CustomSwitch(
                 .offset(x = thumbOffset.dp, y = 3.dp)
                 .clip(CircleShape)
                 .background(Color.White),
-            contentAlignment = Alignment.Center,
         )
     }
 }

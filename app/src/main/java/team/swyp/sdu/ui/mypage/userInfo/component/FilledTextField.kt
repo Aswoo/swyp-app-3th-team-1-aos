@@ -1,4 +1,4 @@
-package team.swyp.sdu.ui.mypage.component
+package team.swyp.sdu.ui.mypage.userInfo.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth

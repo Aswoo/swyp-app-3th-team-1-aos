@@ -30,16 +30,16 @@ object WalkingTestData {
 
         // 감정 타입 리스트 (다양한 감정 조합)
         val emotionTypes = listOf(
-            listOf(EmotionType.HAPPY, EmotionType.ENERGETIC),
-            listOf(EmotionType.CALM, EmotionType.RELAXED),
-            listOf(EmotionType.EXCITED, EmotionType.PROUD),
-            listOf(EmotionType.CONTENT, EmotionType.RELAXED),
-            listOf(EmotionType.HAPPY, EmotionType.CALM),
-            listOf(EmotionType.ENERGETIC, EmotionType.PROUD),
-            listOf(EmotionType.RELAXED, EmotionType.CONTENT),
-            listOf(EmotionType.HAPPY, EmotionType.EXCITED),
-            listOf(EmotionType.CALM, EmotionType.CONTENT),
-            listOf(EmotionType.ENERGETIC, EmotionType.HAPPY),
+            listOf(EmotionType.HAPPY, EmotionType.JOYFUL),
+            listOf(EmotionType.CONTENT, EmotionType.JOYFUL),
+            listOf(EmotionType.HAPPY, EmotionType.CONTENT),
+            listOf(EmotionType.JOYFUL, EmotionType.CONTENT),
+            listOf(EmotionType.DEPRESSED, EmotionType.TIRED),
+            listOf(EmotionType.ANXIOUS, EmotionType.TIRED),
+            listOf(EmotionType.DEPRESSED, EmotionType.ANXIOUS),
+            listOf(EmotionType.HAPPY, EmotionType.DEPRESSED),
+            listOf(EmotionType.JOYFUL, EmotionType.ANXIOUS),
+            listOf(EmotionType.CONTENT, EmotionType.TIRED),
         )
 
         // 감정 메모 리스트
@@ -209,33 +209,29 @@ object WalkingTestData {
         // 감정 타입 리스트 (다양한 감정 조합)
         val allEmotionTypes = listOf(
             EmotionType.HAPPY,
-            EmotionType.EXCITED,
-            EmotionType.CALM,
+            EmotionType.JOYFUL,
             EmotionType.CONTENT,
+            EmotionType.DEPRESSED,
             EmotionType.TIRED,
-            EmotionType.SAD,
             EmotionType.ANXIOUS,
-            EmotionType.ENERGETIC,
-            EmotionType.RELAXED,
-            EmotionType.PROUD,
         )
 
         // 감정 조합 패턴
         val emotionCombinations = listOf(
-            listOf(EmotionType.HAPPY, EmotionType.ENERGETIC),
-            listOf(EmotionType.CALM, EmotionType.RELAXED),
-            listOf(EmotionType.EXCITED, EmotionType.PROUD),
-            listOf(EmotionType.CONTENT, EmotionType.RELAXED),
-            listOf(EmotionType.HAPPY, EmotionType.CALM),
-            listOf(EmotionType.ENERGETIC, EmotionType.PROUD),
-            listOf(EmotionType.RELAXED, EmotionType.CONTENT),
-            listOf(EmotionType.HAPPY, EmotionType.EXCITED),
-            listOf(EmotionType.CALM, EmotionType.CONTENT),
-            listOf(EmotionType.ENERGETIC, EmotionType.HAPPY),
-            listOf(EmotionType.TIRED, EmotionType.SAD),
-            listOf(EmotionType.ANXIOUS, EmotionType.CALM),
-            listOf(EmotionType.SAD, EmotionType.CALM),
-            listOf(EmotionType.TIRED, EmotionType.RELAXED),
+            listOf(EmotionType.HAPPY, EmotionType.JOYFUL),
+            listOf(EmotionType.CONTENT, EmotionType.JOYFUL),
+            listOf(EmotionType.HAPPY, EmotionType.CONTENT),
+            listOf(EmotionType.JOYFUL, EmotionType.CONTENT),
+            listOf(EmotionType.DEPRESSED, EmotionType.TIRED),
+            listOf(EmotionType.ANXIOUS, EmotionType.TIRED),
+            listOf(EmotionType.DEPRESSED, EmotionType.ANXIOUS),
+            listOf(EmotionType.HAPPY, EmotionType.DEPRESSED),
+            listOf(EmotionType.JOYFUL, EmotionType.ANXIOUS),
+            listOf(EmotionType.CONTENT, EmotionType.TIRED),
+            listOf(EmotionType.DEPRESSED, EmotionType.CONTENT),
+            listOf(EmotionType.ANXIOUS, EmotionType.HAPPY),
+            listOf(EmotionType.TIRED, EmotionType.JOYFUL),
+            listOf(EmotionType.DEPRESSED, EmotionType.JOYFUL),
         )
 
         // 감정 메모 리스트
@@ -388,7 +384,7 @@ object WalkingTestData {
                     )
 
                 val stats = generateActivityStats(durationMillis, totalDistance)
-                val emotionTypes = listOf(EmotionType.HAPPY, EmotionType.CONTENT, EmotionType.RELAXED)
+                val emotionTypes = listOf(EmotionType.HAPPY, EmotionType.JOYFUL, EmotionType.CONTENT)
                 val sessionEmotions =
                     listOf(
                         Emotion(
@@ -472,7 +468,7 @@ object WalkingTestData {
             )
 
         val stats = generateActivityStats(durationMillis, totalDistance)
-        val emotionTypes = listOf(EmotionType.HAPPY, EmotionType.CONTENT, EmotionType.RELAXED, EmotionType.PROUD)
+        val emotionTypes = listOf(EmotionType.HAPPY, EmotionType.JOYFUL, EmotionType.CONTENT, EmotionType.DEPRESSED)
         val sessionEmotions =
             listOf(
                 Emotion(

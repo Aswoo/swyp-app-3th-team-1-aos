@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -82,6 +83,14 @@ fun CalendarScreen(
         }.groupBy({ it.first }, { it.second })
     }
 
+    val sessionsByDate = remember(sessions) {
+        sessions.groupBy { session ->
+            java.time.Instant.ofEpochMilli(session.startTime)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        }
+    }
+
     val monthlyStats = remember(sessions, currentMonth) {
         calculateMonthlyStats(sessions, currentMonth, emotionsByDate)
     }
@@ -110,6 +119,7 @@ fun CalendarScreen(
         CalendarGrid(
             yearMonth = currentMonth,
             emotionsByDate = emotionsByDate,
+            sessionsByDate = sessionsByDate,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
 
@@ -226,6 +236,7 @@ private fun CalendarHeader(
 private fun CalendarGrid(
     yearMonth: YearMonth,
     emotionsByDate: Map<LocalDate, List<Emotion>>,
+    sessionsByDate: Map<LocalDate, List<team.swyp.sdu.data.model.WalkingSession>>,
     modifier: Modifier = Modifier,
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -270,10 +281,12 @@ private fun CalendarGrid(
                         val date = yearMonth.atDay(dayIndex + 1)
                         val emotions = emotionsByDate[date] ?: emptyList()
                         val primaryEmotion = emotions.firstOrNull()
+                        val hasWalkSession = sessionsByDate[date]?.isNotEmpty() == true
 
                         CalendarDayCell(
                             day = dayIndex + 1,
                             emotion = primaryEmotion,
+                            hasWalkSession = hasWalkSession,
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
@@ -298,9 +311,11 @@ private fun CalendarGrid(
 private fun CalendarDayCell(
     day: Int,
     emotion: Emotion?,
+    hasWalkSession: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val (backgroundColor, emoji) = getMoodColorAndEmoji(emotion?.type)
+    // 기본 구현: 날짜 숫자 표시
+    val (backgroundColor, _) = getMoodColorAndEmoji(emotion?.type)
 
     Box(
         modifier = modifier
@@ -309,18 +324,88 @@ private fun CalendarDayCell(
             .clickable(enabled = emotion != null) { /* TODO: 날짜 클릭 처리 */ },
         contentAlignment = Alignment.Center,
     ) {
-        if (emotion != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Text(
-                text = emoji,
-                fontSize = 20.sp,
+                text = day.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = if (emotion != null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                },
             )
-        } else {
-            Text(
-                text = "-",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
+
+            // 산책 세션이 있으면 초록색 점 표시
+            if (hasWalkSession) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF4CAF50)) // Green 색상
+                )
+            }
         }
+    }
+}
+
+// 커스텀 캘린더 데이 셀을 위한 확장 함수
+@Composable
+fun CustomCalendarDayCell(
+    day: Int,
+    emotion: Emotion?,
+    hasWalkSession: Boolean = false,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = getMoodColorAndEmoji(emotion?.type).first,
+    contentColor: Color = if (emotion != null) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+    },
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit = {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = day.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = contentColor,
+            )
+
+            // 산책 세션이 있으면 초록색 점 표시
+            if (hasWalkSession) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF4CAF50)) // Green 색상
+                )
+            }
+        }
+    }
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(backgroundColor)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier.clickable(enabled = emotion != null) { /* 기본 클릭 처리 */ }
+                }
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 
@@ -450,25 +535,14 @@ private fun StatisticCard(
     }
 }
 
-private fun getMoodColorAndEmoji(emotionType: EmotionType?): Pair<Color, String> =
+fun getMoodColorAndEmoji(emotionType: EmotionType?): Pair<Color, String> =
     when (emotionType) {
         EmotionType.HAPPY -> Color(0xFFFFE082) to "😊"
-        EmotionType.JOYFUL -> Color(0xFFFFE082) to "😄"
-        EmotionType.LIGHT_FOOTED -> Color(0xFFC5E1A5) to "🚶"
-        EmotionType.EXCITED -> Color(0xFFFFB74D) to "🤩"
-        EmotionType.THRILLED -> Color(0xFFFFB74D) to "✨"
-        EmotionType.TIRED -> Color(0xFFCE93D8) to "😴"
-        EmotionType.SAD -> Color(0xFFFFAB91) to "😢"
-        EmotionType.DEPRESSED -> Color(0xFF90CAF9) to "😔"
-        EmotionType.SLUGGISH -> Color(0xFFB0BEC5) to "😑"
-        EmotionType.MANY_THOUGHTS -> Color(0xFFB39DDB) to "🤔"
-        EmotionType.COMPLEX_MIND -> Color(0xFFB39DDB) to "🧠"
-        EmotionType.CALM -> Color(0xFFA5D6A7) to "😌"
+        EmotionType.JOYFUL -> Color(0xFFFFE082) to "🤩"
         EmotionType.CONTENT -> Color(0xFF90CAF9) to "😄"
+        EmotionType.DEPRESSED -> Color(0xFF90CAF9) to "😔"
+        EmotionType.TIRED -> Color(0xFFCE93D8) to "😴"
         EmotionType.ANXIOUS -> Color(0xFFF48FB1) to "😰"
-        EmotionType.ENERGETIC -> Color(0xFFFFE082) to "⚡"
-        EmotionType.RELAXED -> Color(0xFFA5D6A7) to "😊"
-        EmotionType.PROUD -> Color(0xFF90CAF9) to "😎"
         null -> Color.White to "-"
     }
 
@@ -527,41 +601,19 @@ private fun calculateMonthlyStats(
     val primaryMood = when (primaryEmotionType) {
         EmotionType.HAPPY -> "Happy"
         EmotionType.JOYFUL -> "Joyful"
-        EmotionType.LIGHT_FOOTED -> "Light-footed"
-        EmotionType.EXCITED -> "Excited"
-        EmotionType.THRILLED -> "Thrilled"
-        EmotionType.TIRED -> "Tired"
-        EmotionType.SAD -> "Sad"
-        EmotionType.DEPRESSED -> "Depressed"
-        EmotionType.SLUGGISH -> "Sluggish"
-        EmotionType.MANY_THOUGHTS -> "Many Thoughts"
-        EmotionType.COMPLEX_MIND -> "Complex Mind"
-        EmotionType.CALM -> "Calm"
         EmotionType.CONTENT -> "Content"
+        EmotionType.DEPRESSED -> "Depressed"
+        EmotionType.TIRED -> "Tired"
         EmotionType.ANXIOUS -> "Anxious"
-        EmotionType.ENERGETIC -> "Energetic"
-        EmotionType.RELAXED -> "Relaxed"
-        EmotionType.PROUD -> "Proud"
     }
 
     val description = when (primaryEmotionType) {
         EmotionType.HAPPY -> "You're feeling happy and optimistic. Keep up the good vibes!"
         EmotionType.JOYFUL -> "You're feeling joyful and content. Enjoy this moment!"
-        EmotionType.LIGHT_FOOTED -> "You're feeling light and energetic. Perfect for a walk!"
-        EmotionType.EXCITED -> "You're full of energy and excitement. Channel it positively!"
-        EmotionType.THRILLED -> "You're thrilled and excited. Make the most of this energy!"
-        EmotionType.TIRED -> "You might need some rest. Take care of yourself!"
-        EmotionType.SAD -> "It's okay to feel down sometimes. Remember, this too shall pass."
-        EmotionType.DEPRESSED -> "Take it easy. Walking can help clear your mind."
-        EmotionType.SLUGGISH -> "You're feeling sluggish. A walk might help energize you."
-        EmotionType.MANY_THOUGHTS -> "Your mind is busy. Walking can help organize your thoughts."
-        EmotionType.COMPLEX_MIND -> "Your mind is complex. Take a walk to clear your head."
-        EmotionType.CALM -> "You're feeling peaceful and balanced. Maintain this tranquility!"
         EmotionType.CONTENT -> "You're satisfied and at ease. Enjoy this contentment!"
+        EmotionType.DEPRESSED -> "Take it easy. Walking can help clear your mind."
+        EmotionType.TIRED -> "You might need some rest. Take care of yourself!"
         EmotionType.ANXIOUS -> "Take deep breaths. You're stronger than you think."
-        EmotionType.ENERGETIC -> "You're bursting with energy! Use it wisely."
-        EmotionType.RELAXED -> "You're in a relaxed state. Enjoy this moment of peace."
-        EmotionType.PROUD -> "You should be proud of yourself. Keep going!"
     }
 
     val focusScore = if (sessionsCount > 0) {

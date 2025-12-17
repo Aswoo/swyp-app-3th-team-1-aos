@@ -3,6 +3,9 @@ package team.swyp.sdu.di
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import team.swyp.sdu.data.api.auth.AuthApi
+import team.swyp.sdu.data.api.goal.GoalApi
+import team.swyp.sdu.data.api.mission.MissionApi
+import team.swyp.sdu.data.api.user.UserApi
 import team.swyp.sdu.data.remote.auth.TokenProvider
 import team.swyp.sdu.data.remote.auth.TokenProviderImpl
 import team.swyp.sdu.data.remote.interceptor.AuthInterceptor
@@ -66,6 +69,8 @@ object NetworkModule {
             .addInterceptor(authInterceptor) // 로깅 전에 추가 (순서 중요)
             .addInterceptor(loggingInterceptor)
             .authenticator(tokenAuthenticator) // 401 응답 처리
+            .followRedirects(false) // API에서는 리다이렉트 따라가지 않음 (중요!)
+            .followSslRedirects(false)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -104,6 +109,24 @@ object NetworkModule {
     fun provideAuthApi(
         @Named("walkit") retrofit: Retrofit,
     ): AuthApi = retrofit.create(AuthApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideUserApi(
+        @Named("walkit") retrofit: Retrofit,
+    ): UserApi = retrofit.create(UserApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMissionApi(
+        @Named("walkit") retrofit: Retrofit,
+    ): MissionApi = retrofit.create(MissionApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideGoalApi(
+        @Named("walkit") retrofit: Retrofit,
+    ): GoalApi = retrofit.create(GoalApi::class.java)
 
     // TODO: PokemonApiService가 필요하면 구현 후 주석 해제
     // @Provides

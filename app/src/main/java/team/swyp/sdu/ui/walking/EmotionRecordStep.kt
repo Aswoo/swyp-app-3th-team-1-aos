@@ -1,6 +1,11 @@
 package team.swyp.sdu.ui.walking
 
+import android.content.ContentValues
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,11 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -63,13 +71,61 @@ fun EmotionRecordStep(
     viewModel: WalkingViewModel = hiltViewModel(),
     onNext: () -> Unit,
     onClose: () -> Unit,
-    onPickImage: () -> Unit = {},
 ) {
     val emotionPhotoUri by viewModel.emotionPhotoUri.collectAsStateWithLifecycle()
     val emotionText by viewModel.emotionText.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var isFirstSectionExpanded by remember { mutableStateOf(false) }
+
+    // 카메라 촬영용 Uri 생성
+    val cameraImageUri = remember {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "emotion_image_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Emotions")
+            }
+        }
+        context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+    }
+
+    // 카메라 촬영 Activity Result Launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success && cameraImageUri != null) {
+            viewModel.setEmotionPhotoUri(cameraImageUri)
+        }
+    }
+
+    // 갤러리 선택 Activity Result Launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.setEmotionPhotoUri(uri)
+        }
+    }
+
+    // 권한 요청 Launcher들
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraImageUri?.let { uri ->
+                cameraLauncher.launch(uri)
+            }
+        }
+    }
+
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            galleryLauncher.launch("image/*")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -149,9 +205,49 @@ fun EmotionRecordStep(
                 // 사진 입력 영역
                 PhotoInputArea(
                     photoUri = emotionPhotoUri,
-                    onPickImage = {
-                        viewModel.setEmotionPhotoUri(null) // TODO: 실제 이미지 선택 구현
-                        onPickImage()
+                    cameraLauncher = {
+                        // 카메라 권한 체크 및 실행
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            ) {
+                                cameraImageUri?.let { uri ->
+                                    cameraLauncher.launch(uri)
+                                }
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        } else {
+                            cameraImageUri?.let { uri ->
+                                cameraLauncher.launch(uri)
+                            }
+                        }
+                    },
+                    galleryLauncher = {
+                        // 갤러리 권한 체크 및 실행
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.READ_MEDIA_IMAGES
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            ) {
+                                galleryLauncher.launch("image/*")
+                            } else {
+                                galleryPermissionLauncher.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
+                            }
+                        } else {
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.READ_EXTERNAL_STORAGE
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            ) {
+                                galleryLauncher.launch("image/*")
+                            } else {
+                                galleryPermissionLauncher.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                            }
+                        }
                     },
                 )
 
@@ -250,8 +346,11 @@ private fun ExpandableSection(
 @Composable
 private fun PhotoInputArea(
     photoUri: Uri?,
-    onPickImage: () -> Unit,
+    cameraLauncher: () -> Unit,
+    galleryLauncher: () -> Unit,
 ) {
+    var showImageMenu by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,7 +359,7 @@ private fun PhotoInputArea(
                 color = Color(0xFFF5F5F5),
                 shape = RoundedCornerShape(16.dp),
             )
-            .clickable(onClick = onPickImage)
+            .clickable(onClick = { showImageMenu = true })
             .border(
                 width = 1.dp,
                 color = Color(0xFFE5E5E5),
@@ -297,6 +396,37 @@ private fun PhotoInputArea(
                 )
             }
         }
+
+        // 이미지 선택 드랍다운 메뉴
+        DropdownMenu(
+            expanded = showImageMenu,
+            onDismissRequest = { showImageMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "촬영하기",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                onClick = {
+                    showImageMenu = false
+                    cameraLauncher()
+                }
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "갤러리에서 가져오기",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                onClick = {
+                    showImageMenu = false
+                    galleryLauncher()
+                }
+            )
+        }
     }
 }
 
@@ -325,4 +455,5 @@ private fun TextInputArea(
         maxLines = 8,
     )
 }
+
 

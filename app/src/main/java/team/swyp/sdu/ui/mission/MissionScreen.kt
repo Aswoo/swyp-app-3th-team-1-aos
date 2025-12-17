@@ -11,27 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,76 +26,61 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import team.swyp.sdu.domain.model.MissionCategory
+import team.swyp.sdu.presentation.viewmodel.MissionUiState
 import team.swyp.sdu.presentation.viewmodel.MissionViewModel
-import team.swyp.sdu.presentation.viewmodel.MissionItem
+import team.swyp.sdu.ui.components.AppHeader
+import team.swyp.sdu.ui.mission.component.CategoryChip
+import team.swyp.sdu.ui.mission.component.MissionCard
+import team.swyp.sdu.ui.mission.component.PopularMissionCard
+import team.swyp.sdu.ui.theme.WalkItTheme
 
-/**
- * 미션 화면
- * Figma 디자인 기반 구현
- */
-@OptIn(ExperimentalMaterial3Api::class)
+
+@Composable
+fun MissionRoute(
+    onNavigateBack: () -> Unit,
+    onNavigateToMissionDetail: (String) -> Unit = {},
+) {
+    val viewModel: MissionViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    MissionScreen(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onMissionClick = { missionId ->
+            onNavigateToMissionDetail(missionId)
+        },
+    )
+}
+
 @Composable
 fun MissionScreen(
+    uiState: MissionUiState,
     onNavigateBack: () -> Unit,
-    viewModel: MissionViewModel = hiltViewModel(),
+    onMissionClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedCategory by remember { mutableStateOf<MissionCategory?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "미션",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "뒤로가기",
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: 햄버거 메뉴 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "메뉴",
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: 프로필 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "프로필",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF4CAF50)),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                ),
-            )
-        },
-        modifier = modifier.fillMaxSize(),
-    ) { paddingValues ->
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // 헤더
+        AppHeader(
+            title = "미션",
+            onNavigateBack = onNavigateBack,
+        )
+
+        // 메인 콘텐츠
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.White),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             // 이번 주 인기 미션 섹션
@@ -151,159 +120,38 @@ fun MissionScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        CategoryChip(
-                            text = "색깔찾기",
-                            isSelected = selectedCategory == "색깔찾기",
-                            onClick = { selectedCategory = if (selectedCategory == "색깔찾기") null else "색깔찾기" },
-                        )
-                        CategoryChip(
-                            text = "물건 찾기",
-                            isSelected = selectedCategory == "물건 찾기",
-                            onClick = { selectedCategory = if (selectedCategory == "물건 찾기") null else "물건 찾기" },
-                        )
-                        CategoryChip(
-                            text = "태그 3",
-                            isSelected = selectedCategory == "태그 3",
-                            onClick = { selectedCategory = if (selectedCategory == "태그 3") null else "태그 3" },
-                        )
+                        MissionCategory.entries.forEach { category ->
+                            CategoryChip(
+                                category = category,
+                                isSelected = selectedCategory == category,
+                                onClick = { selectedCategory = if (selectedCategory == category) null else category },
+                            )
+                        }
                     }
                 }
             }
 
             // 미션 리스트
-            items(uiState.missions) { mission ->
+            items(uiState.weeklyMissions) { mission ->
                 MissionCard(
                     mission = mission,
-                    onClick = { /* TODO: 미션 상세 화면 */ },
+                    onClick = { onMissionClick(mission.userWeeklyMissionId.toString()) },
                 )
             }
+
+            item { Spacer(modifier = Modifier.height(12.dp)) }
         }
     }
 }
 
 @Composable
-private fun PopularMissionCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F5F5),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "이번 주 인기 미션!",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "혹은 이 자리에 광고가 생긴다면 들어가도..",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF757575),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryChip(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isSelected) Color(0xFFE0E0E0) else Color(0xFFF5F5F5))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable(onClick = onClick),
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Black,
+@Preview
+fun MissionPreview(){
+    WalkItTheme {
+        MissionScreen(
+            uiState = MissionUiState(),
+            onNavigateBack = {},
+            onMissionClick = {},
         )
-    }
-}
-
-@Composable
-private fun MissionCard(
-    mission: MissionItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F5F5),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // 카테고리 태그
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFE0E0E0))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = mission.category,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Black,
-                    )
-                }
-
-                // 미션 제목
-                Text(
-                    text = mission.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                // 보상
-                Text(
-                    text = mission.reward,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black,
-                )
-            }
-
-            // ArrowRight 아이콘 버튼
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE0E0E0))
-                    .clickable(onClick = onClick),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = "미션 상세",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
     }
 }

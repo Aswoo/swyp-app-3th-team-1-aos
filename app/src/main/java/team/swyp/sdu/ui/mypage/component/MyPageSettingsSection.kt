@@ -1,0 +1,66 @@
+package team.swyp.sdu.ui.mypage.component
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import team.swyp.sdu.ui.components.MenuItem
+import team.swyp.sdu.ui.components.SectionCard
+import team.swyp.sdu.ui.theme.Grey10
+import team.swyp.sdu.ui.theme.walkItTypography
+
+/**
+ * 마이 페이지 설정 섹션 컴포넌트
+ *
+ * 알림 설정, 내 정보 관리, 내 목표 관리를 포함합니다.
+ */
+@Composable
+fun MyPageSettingsSection(
+    onNavigateNotificationSetting: () -> Unit,
+    onNavigateUserInfoEdit: () -> Unit,
+    onNavigateGoalManagement: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(horizontal = 16.dp)) {
+        // 일반 설정 섹션
+        SectionCard(modifier = modifier) {
+            Text(
+                modifier = modifier.padding(top = 12.dp, start = 16.dp),
+                text = "설정",
+                style = MaterialTheme.walkItTypography.bodyL.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Grey10
+            )
+            Spacer(Modifier.height(8.dp))
+
+            MenuItem("알람 설정", onNavigateNotificationSetting)
+            Spacer(Modifier.height(8.dp))
+            MenuItem("내 정보 관리", onNavigateUserInfoEdit)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 추가 설정 섹션
+        SectionCard {
+            Text(
+                modifier = modifier.padding(top = 12.dp, start = 16.dp),
+                text = "목표",
+                style = MaterialTheme.walkItTypography.bodyL.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Grey10
+            )
+            Spacer(Modifier.height(8.dp))
+
+            MenuItem("내 목표 관리", onNavigateGoalManagement)
+        }
+    }
+
+}

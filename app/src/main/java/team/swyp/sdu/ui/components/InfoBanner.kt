@@ -21,13 +21,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import team.swyp.sdu.R
 import team.swyp.sdu.ui.theme.BluePrimary
 import team.swyp.sdu.ui.theme.BlueSecondary
 import team.swyp.sdu.ui.theme.BlueTertiary
 import team.swyp.sdu.ui.theme.WalkItTheme
+import team.swyp.sdu.ui.theme.walkItTypography
 
 /**
  * 정보 알림 배너 컴포넌트
@@ -110,7 +113,7 @@ private fun InfoIcon(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = Icons.Default.Info,
+            painter = painterResource(R.drawable.ic_info_exclamation),
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier.size(16.dp),

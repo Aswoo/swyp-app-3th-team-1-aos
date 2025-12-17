@@ -1,4 +1,4 @@
-package team.swyp.sdu.ui.settings
+package team.swyp.sdu.ui.mypage.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

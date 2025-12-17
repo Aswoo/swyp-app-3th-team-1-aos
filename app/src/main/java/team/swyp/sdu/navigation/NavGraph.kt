@@ -17,10 +17,14 @@ import team.swyp.sdu.ui.walking.EmotionSelectionStep
 import team.swyp.sdu.ui.walking.WalkingFinishStep
 import team.swyp.sdu.ui.walking.WalkingResultScreen
 import team.swyp.sdu.ui.walking.WalkingScreen
-import team.swyp.sdu.ui.calendar.CalendarScreen
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import team.swyp.sdu.presentation.viewmodel.UserViewModel
+import team.swyp.sdu.ui.mission.MissionRoute
+import team.swyp.sdu.ui.mypage.MyPageRoute
+import team.swyp.sdu.ui.mypage.goal.GoalManagementRoute
+import team.swyp.sdu.ui.mypage.settings.NotificationSettingsRoute
+import team.swyp.sdu.ui.mypage.userInfo.UserInfoManagementScreen
 
 sealed class Screen(
     val route: String,
@@ -62,6 +66,8 @@ sealed class Screen(
 
     data object Friends : Screen("friends")
 
+    data object FriendSearch : Screen("friend_search")
+
     data object GoalManagement : Screen("goal_management")
 
     data object Mission : Screen("mission")
@@ -69,6 +75,8 @@ sealed class Screen(
     data object MyPage : Screen("mypage")
 
     data object UserInfoManagement : Screen("user_info_management")
+
+    data object NotificationSettings : Screen("notification_settings")
 }
 
 @Composable
@@ -127,6 +135,15 @@ fun NavGraph(
 
         composable(Screen.Friends.route) {
             team.swyp.sdu.ui.friend.FriendScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.FriendSearch.route)
+                },
+            )
+        }
+
+        composable(Screen.FriendSearch.route) {
+            team.swyp.sdu.ui.friend.FriendSearchScreen(
                 onNavigateBack = { navController.popBackStack() },
             )
         }
@@ -247,7 +264,7 @@ fun NavGraph(
         }
 
         composable(Screen.GoalManagement.route) {
-            team.swyp.sdu.ui.goal.GoalManagementScreen(
+            GoalManagementRoute(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
@@ -255,7 +272,43 @@ fun NavGraph(
         }
 
         composable(Screen.Mission.route) {
-            team.swyp.sdu.ui.mission.MissionScreen(
+            MissionRoute(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+
+        composable(Screen.MyPage.route) {
+            MyPageRoute(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateCharacterEdit = {
+                    navController.navigate(Screen.UserInfoManagement.route)
+                },
+                onNavigateUserInfoEdit = {
+                    navController.navigate(Screen.UserInfoManagement.route)
+                },
+                onNavigateGoalManagement = {
+                    navController.navigate(Screen.GoalManagement.route)
+                },
+                onNavigateNotificationSetting = {
+                    navController.navigate(Screen.NotificationSettings.route)
+                },
+            )
+        }
+
+        composable(Screen.UserInfoManagement.route) {
+            UserInfoManagementScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.NotificationSettings.route) {
+            NotificationSettingsRoute(
                 onNavigateBack = {
                     navController.popBackStack()
                 },

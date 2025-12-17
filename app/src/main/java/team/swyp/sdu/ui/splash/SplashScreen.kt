@@ -17,7 +17,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import team.swyp.sdu.navigation.Screen
 import team.swyp.sdu.presentation.viewmodel.LoginViewModel
-import team.swyp.sdu.presentation.viewmodel.OnboardingViewModel
 import team.swyp.sdu.ui.components.LottieAnimationView
 import timber.log.Timber
 
@@ -28,20 +27,20 @@ import timber.log.Timber
 fun SplashScreen(
     navController: NavHostController,
     loginViewModel: LoginViewModel = hiltViewModel(),
-    onboardingViewModel: OnboardingViewModel = hiltViewModel(),
+    splashViewModel: SplashViewModel = hiltViewModel(),
 ) {
     val isLoggedIn by loginViewModel.isLoggedIn.collectAsStateWithLifecycle()
     val isLoginChecked by loginViewModel.isLoginChecked.collectAsStateWithLifecycle()
-    val onboardingCompleted by onboardingViewModel.isCompleted.collectAsStateWithLifecycle(initialValue = false)
+    val onboardingCompleted by splashViewModel.onboardingCompleted.collectAsStateWithLifecycle()
     var navigated by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(isLoginChecked, isLoggedIn, onboardingCompleted) {
-        if (!isLoginChecked || navigated) return@LaunchedEffect
+        if (!isLoginChecked || navigated || onboardingCompleted == null) return@LaunchedEffect
 
         val targetRoute =
             when {
                 !isLoggedIn -> Screen.Login.route
-                !onboardingCompleted -> Screen.Onboarding.route
+                onboardingCompleted == false -> Screen.Onboarding.route
                 else -> Screen.Main.route
             }
 

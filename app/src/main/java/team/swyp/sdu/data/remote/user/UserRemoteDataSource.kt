@@ -1,40 +1,136 @@
 package team.swyp.sdu.data.remote.user
 
+import android.net.Uri
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.delay
-import team.swyp.sdu.data.remote.user.dto.RemoteUserDto
-import team.swyp.sdu.domain.model.UserProfile
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import team.swyp.sdu.data.api.user.UserApi
+import team.swyp.sdu.data.remote.user.dto.UserSearchResultDto
+import team.swyp.sdu.domain.model.FollowStatus
+import team.swyp.sdu.domain.model.Sex
+import team.swyp.sdu.domain.model.User
+import timber.log.Timber
+import java.io.File
 
 /**
- * 사용자 정보를 서버에서 가져오는 스텁 데이터 소스
- *
- * TODO: 실제 Retrofit API 호출로 교체
+ * 사용자 정보를 서버에서 가져오는 데이터 소스
  */
 @Singleton
 class UserRemoteDataSource @Inject constructor(
-    // 추후 Retrofit 서비스를 주입받도록 확장 예정
+    private val userApi: UserApi,
 ) {
-    suspend fun fetchUserProfile(): UserProfile {
-        // TODO: API 명세가 나오면 실제 호출로 대체
-        delay(150) // 최소한의 비동기 흐름 유지
-        val stub =
-            RemoteUserDto(
-                uid = "demo-uid",
-                nickname = "게스트",
-                clearedCount = 0,
-                point = 0,
-                goalKmPerWeek = 20.0,
-                birthYear = 1990,
-                goal =
-                    team.swyp.sdu.data.remote.user.dto.RemoteGoalDto(
-                        periodType = "WEEK",
-                        targetSessions = 3,
-                        targetSteps = 30000,
-                        progressSessions = 1,
-                        progressSteps = 8500,
-                    ),
+    suspend fun fetchUser(): User {
+        return try {
+            val dto = userApi.getUser()
+            Timber.d("사용자 정보 조회 성공: ${dto.nickname}")
+            dto.toDomain()
+        } catch (e: Exception) {
+            Timber.e(e, "사용자 정보 조회 실패")
+            throw e
+        }
+    }
+
+    /**
+     * 닉네임으로 사용자 검색
+     *
+     * @param nickname 검색할 닉네임
+     * @return 검색 결과 (사용자 정보 및 친구 요청 상태)
+     */
+    suspend fun searchUserByNickname(nickname: String): UserSearchResult {
+        return try {
+            val dto = userApi.searchByNickname(nickname)
+            Timber.d("사용자 검색 성공: ${dto.nickname}, 상태: ${dto.followStatus}")
+            UserSearchResult(
+                userId = dto.userId,
+                imageName = dto.imageName,
+                nickname = dto.nickname,
+                followStatus = dto.getFollowStatusEnum(),
             )
-        return stub.toDomain()
+        } catch (e: Exception) {
+            Timber.e(e, "사용자 검색 실패: $nickname")
+            throw e
+        }
+    }
+
+    /**
+     * 닉네임 등록
+     *
+     * @param nickname 등록할 닉네임
+     */
+    suspend fun registerNickname(nickname: String) {
+        try {
+            // 닉네임 등록 API 호출 (응답 본문 없음)
+            userApi.registerNickname(nickname)
+            Timber.d("닉네임 등록 성공: $nickname")
+        } catch (e: Exception) {
+            Timber.e(e, "닉네임 등록 실패: $nickname")
+            throw e
+        }
+    }
+
+    /**
+     * 사용자 프로필 업데이트 (온보딩 완료)
+     *
+     * @param nickname 닉네임
+     * @param birthDate 생년월일 (ISO 8601 형식)
+     * @param sex 성별
+     * @param imageUri 선택된 이미지 URI (선택사항)
+     * @return 업데이트된 사용자 정보
+     */
+    suspend fun updateUserProfile(
+        nickname: String,
+        birthDate: String,
+        sex: Sex,
+        imageUri: String? = null,
+    ): User {
+        return try {
+            // 이미지 파일 처리
+            val imagePart = imageUri?.let { uri ->
+                try {
+                    val file = File(Uri.parse(uri).path ?: "")
+                    if (file.exists()) {
+                        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                        MultipartBody.Part.createFormData("image", file.name, requestFile)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "이미지 파일 처리 실패: $uri")
+                    null
+                }
+            }
+
+            // 텍스트 데이터들
+            val nicknameBody = nickname.toRequestBody("text/plain".toMediaTypeOrNull())
+            val birthDateBody = birthDate.toRequestBody("text/plain".toMediaTypeOrNull())
+            val sexBody = sex.name.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val dto = userApi.updateUserProfile(
+                image = imagePart,
+                nickname = nicknameBody,
+                birthDate = birthDateBody,
+                sex = sexBody,
+            )
+
+            Timber.d("사용자 프로필 업데이트 성공: $nickname")
+            dto.toDomain()
+        } catch (e: Exception) {
+            Timber.e(e, "사용자 프로필 업데이트 실패: $nickname")
+            throw e
+        }
     }
 }
+
+/**
+ * 사용자 검색 결과 도메인 모델
+ */
+data class UserSearchResult(
+    val userId: Long,
+    val imageName: String?,
+    val nickname: String,
+    val followStatus: FollowStatus,
+)

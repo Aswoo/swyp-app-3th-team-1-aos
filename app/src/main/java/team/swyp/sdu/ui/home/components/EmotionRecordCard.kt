@@ -93,22 +93,11 @@ fun EmotionRecordCard(
 private fun getEmotionDisplayName(emotionType: EmotionType): String {
     return when (emotionType) {
         EmotionType.HAPPY -> "기쁨"
-        EmotionType.JOYFUL -> "행복"
-        EmotionType.LIGHT_FOOTED -> "가벼움"
-        EmotionType.EXCITED -> "신남"
-        EmotionType.THRILLED -> "설렘"
+        EmotionType.JOYFUL -> "즐거움"
+        EmotionType.CONTENT -> "행복함"
+        EmotionType.DEPRESSED -> "우울함"
         EmotionType.TIRED -> "지침"
-        EmotionType.SAD -> "슬픔"
-        EmotionType.DEPRESSED -> "우울"
-        EmotionType.SLUGGISH -> "무기력"
-        EmotionType.MANY_THOUGHTS -> "고민"
-        EmotionType.COMPLEX_MIND -> "복잡함"
-        EmotionType.CALM -> "평온"
-        EmotionType.CONTENT -> "만족"
-        EmotionType.ANXIOUS -> "불안"
-        EmotionType.ENERGETIC -> "활기"
-        EmotionType.RELAXED -> "편안"
-        EmotionType.PROUD -> "자랑스러움"
+        EmotionType.ANXIOUS -> "짜증남"
     }
 }
 
@@ -119,20 +108,10 @@ private fun getEmotionEmoji(emotionType: EmotionType): String {
     return when (emotionType) {
         EmotionType.HAPPY,
         EmotionType.JOYFUL,
-        EmotionType.EXCITED,
-        EmotionType.THRILLED,
-        EmotionType.PROUD,
-        EmotionType.LIGHT_FOOTED,
-        EmotionType.ENERGETIC -> "😊"
-        EmotionType.CALM,
-        EmotionType.CONTENT,
-        EmotionType.RELAXED -> "🙂"
-        EmotionType.TIRED,
-        EmotionType.SLUGGISH -> "😴"
-        EmotionType.SAD,
+        EmotionType.CONTENT -> "😊"
         EmotionType.DEPRESSED -> "😢"
-        EmotionType.MANY_THOUGHTS,
-        EmotionType.COMPLEX_MIND,
+        EmotionType.TIRED -> "😴"
         EmotionType.ANXIOUS -> "😐"
     }
 }
+

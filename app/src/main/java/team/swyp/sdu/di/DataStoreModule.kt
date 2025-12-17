@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import team.swyp.sdu.data.local.datastore.AuthDataStore
+import team.swyp.sdu.data.local.datastore.NotificationDataStore
 import team.swyp.sdu.data.local.datastore.OnboardingDataStore
 
 /**
@@ -40,6 +41,17 @@ object DataStoreModule {
     fun provideOnboardingDataStore(
         dataStore: DataStore<Preferences>,
     ): OnboardingDataStore = OnboardingDataStore(dataStore)
+
+    @Provides
+    @Singleton
+    fun provideNotificationDataStore(
+        @ApplicationContext context: Context,
+    ): NotificationDataStore {
+        val notificationDataStore = PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("notification_prefs") },
+        )
+        return NotificationDataStore(notificationDataStore)
+    }
 }
 
 

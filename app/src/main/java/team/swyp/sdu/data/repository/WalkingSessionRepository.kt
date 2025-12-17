@@ -136,4 +136,14 @@ class WalkingSessionRepository
         ) {
             walkingSessionDao.updateSyncStatus(id, isSynced)
         }
+
+        /**
+         * 총 걸음수 조회 (Flow로 실시간 업데이트)
+         */
+        fun getTotalStepCount(): Flow<Int> = walkingSessionDao.getTotalStepCount()
+
+        /**
+         * 총 이동거리 조회 (Flow로 실시간 업데이트, 미터 단위)
+         */
+        fun getTotalDistance(): Flow<Float> = walkingSessionDao.getTotalDistance()
     }

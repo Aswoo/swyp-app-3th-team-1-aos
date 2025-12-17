@@ -3,6 +3,7 @@ package team.swyp.sdu.di
 import android.content.Context
 import androidx.room.Room
 import team.swyp.sdu.data.local.dao.AppliedItemDao
+import team.swyp.sdu.data.local.dao.GoalDao
 import team.swyp.sdu.data.local.dao.MissionProgressDao
 import team.swyp.sdu.data.local.dao.PurchasedItemDao
 import team.swyp.sdu.data.local.dao.UserDao
@@ -80,4 +81,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideUserDao(database: AppDatabase): UserDao = database.userDao()
+
+    @Provides
+    @Singleton
+    fun provideGoalDao(database: AppDatabase): GoalDao = database.goalDao()
 }

@@ -9,16 +9,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import team.swyp.sdu.core.Result
+import team.swyp.sdu.core.onError
+import team.swyp.sdu.core.onSuccess
+import team.swyp.sdu.domain.model.Goal
+import timber.log.Timber
 import team.swyp.sdu.data.model.Emotion
 import team.swyp.sdu.data.model.EmotionType
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.repository.WalkingSessionRepository
+import team.swyp.sdu.domain.repository.UserRepository
+import team.swyp.sdu.domain.repository.GoalRepository
 import java.time.LocalDate
 import java.time.ZoneId
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
     data class Success(
+        val nickname: String = "",
+        val levelLabel: String = "",
+        val todaySteps: Int = 0,
         val sessionsThisWeek: List<WalkingSession>,
         val weeklyEmotionSummary: WeeklyEmotionSummary? = null,
     ) : HomeUiState
@@ -39,16 +49,86 @@ data class WeeklyEmotionSummary(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val walkingSessionRepository: WalkingSessionRepository,
+    private val userRepository: UserRepository,
+    private val goalRepository: GoalRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadSessions()
+        loadData()
     }
 
-    private fun loadSessions() {
+    private fun loadData() {
+        viewModelScope.launch {
+            // 사용자 정보와 목표 정보 동시에 로드
+            val userResult = userRepository.refreshUser()
+            val goalResult = goalRepository.getGoal()
+
+            val nickname = when (userResult) {
+                is Result.Success -> userResult.data.nickname ?: "사용자"
+                else -> "사용자"
+            }
+
+            val goal = when (goalResult) {
+                is Result.Success -> goalResult.data
+                else -> null
+            }
+
+            // 레벨과 오늘 걸음 수 계산
+            val levelLabel = calculateLevelLabel(goal)
+            val todaySteps = calculateTodaySteps()
+
+            // 세션 정보 로드
+            loadSessions(nickname, levelLabel, todaySteps)
+        }
+    }
+
+    private fun loadUser() {
+        viewModelScope.launch {
+            userRepository.refreshUser()
+                .onSuccess { user ->
+                    // 현재 UI 상태에 사용자 정보 업데이트
+                    val currentState = _uiState.value
+                    if (currentState is HomeUiState.Success) {
+                        _uiState.value = currentState.copy(
+                            nickname = user.nickname ?: "사용자",
+                            levelLabel = "새싹 Lv.1", // TODO: 레벨 계산 로직 구현
+                            todaySteps = 0, // TODO: 오늘 걸음 수 계산 로직 구현
+                        )
+                    }
+                }
+                .onError { throwable, message ->
+                    // 사용자 정보 로드 실패 - 기본값 유지
+                    Timber.e(throwable, "사용자 정보 로드 실패: $message")
+                }
+        }
+    }
+
+    /**
+     * 목표 정보를 기반으로 레벨 라벨 계산
+     */
+    private fun calculateLevelLabel(goal: Goal?): String {
+        return when {
+            goal == null -> "새싹 Lv.1"
+            goal.targetStepCount >= 10000 -> "나무 Lv.3"
+            goal.targetStepCount >= 5000 -> "나무 Lv.2"
+            goal.targetStepCount > 0 -> "나무 Lv.1"
+            else -> "새싹 Lv.1"
+        }
+    }
+
+    /**
+     * 오늘의 실제 걸음 수 계산
+     * TODO: 실제 걸음 수 데이터에서 계산하도록 구현
+     */
+    private fun calculateTodaySteps(): Int {
+        // 임시 구현: 실제로는 걸음 수 센서나 건강 데이터에서 가져와야 함
+        return 0
+    }
+
+    private fun loadSessions(nickname: String, levelLabel: String, todaySteps: Int) {
         viewModelScope.launch {
             walkingSessionRepository
                 .getAllSessions()
@@ -59,6 +139,9 @@ class HomeViewModel @Inject constructor(
                     val thisWeekSessions = sessions.filterThisWeek()
                     val emotionSummary = analyzeWeeklyEmotions(thisWeekSessions)
                     _uiState.value = HomeUiState.Success(
+                        nickname = nickname,
+                        levelLabel = levelLabel,
+                        todaySteps = todaySteps,
                         sessionsThisWeek = thisWeekSessions,
                         weeklyEmotionSummary = emotionSummary,
                     )
@@ -92,26 +175,15 @@ class HomeViewModel @Inject constructor(
 
         // 긍정/부정 감정 분류
         val positiveEmotions = listOf(
-            EmotionType.HAPPY,
-            EmotionType.JOYFUL,
-            EmotionType.EXCITED,
-            EmotionType.THRILLED,
-            EmotionType.PROUD,
-            EmotionType.LIGHT_FOOTED,
-            EmotionType.CALM,
-            EmotionType.CONTENT,
-            EmotionType.ENERGETIC,
-            EmotionType.RELAXED,
+            EmotionType.HAPPY,    // 기쁨
+            EmotionType.JOYFUL,   // 즐거움
+            EmotionType.CONTENT,  // 행복함
         )
 
         val negativeEmotions = listOf(
-            EmotionType.SAD,
-            EmotionType.DEPRESSED,
-            EmotionType.TIRED,
-            EmotionType.SLUGGISH,
-            EmotionType.MANY_THOUGHTS,
-            EmotionType.COMPLEX_MIND,
-            EmotionType.ANXIOUS,
+            EmotionType.DEPRESSED, // 우울함
+            EmotionType.TIRED,     // 지침
+            EmotionType.ANXIOUS,   // 짜증남
         )
 
         val positiveCount = positiveEmotions.sumOf { emotionCounts[it] ?: 0 }
