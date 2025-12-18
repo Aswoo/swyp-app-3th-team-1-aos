@@ -31,7 +31,6 @@ import team.swyp.sdu.ui.home.components.TopPill
 import team.swyp.sdu.ui.home.components.LevelChip
 import team.swyp.sdu.ui.home.components.WeeklyRecordCard
 import team.swyp.sdu.ui.home.components.HomeMission
-import team.swyp.sdu.ui.home.components.EmotionRecordCard
 import team.swyp.sdu.ui.home.components.HomeHeader
 
 /**
@@ -179,7 +178,7 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
-                        EmotionRecordCard(emotionSummary = summary)
+//                        EmotionRecordCard(emotionSummary = summary)
                     }
                 }
             }

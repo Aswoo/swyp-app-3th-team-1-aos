@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -41,14 +42,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import timber.log.Timber
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.presentation.viewmodel.KakaoMapViewModel
+import team.swyp.sdu.presentation.viewmodel.WalkingUiState
 import team.swyp.sdu.presentation.viewmodel.WalkingViewModel
+import team.swyp.sdu.ui.walking.viewmodel.WalkingResultUiState
+import team.swyp.sdu.ui.walking.viewmodel.WalkingResultViewModel
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -211,12 +217,16 @@ fun WalkingResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val locations by viewModel.locations.collectAsStateWithLifecycle()
+    val emotionPhotoUri by viewModel.emotionPhotoUri.collectAsStateWithLifecycle()
     val snapshotState by mapViewModel.snapshotState.collectAsStateWithLifecycle()
     val resultUiState by resultViewModel.uiState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
+
+
     val session =
         when (val state = uiState) {
-            is team.swyp.sdu.presentation.viewmodel.WalkingUiState.Completed -> {
+            is WalkingUiState.Completed -> {
                 state.session
             }
 
@@ -229,6 +239,16 @@ fun WalkingResultScreen(
         if (locations.isNotEmpty()) {
             mapViewModel.setLocations(locations)
         }
+    }
+
+    // ViewModel 정보 로깅 (디버깅용)
+    LaunchedEffect(viewModel, emotionPhotoUri, locations) {
+        Timber.d("🚶 WalkingResultScreen ViewModel 상태:")
+        Timber.d("  📸 emotionPhotoUri: $emotionPhotoUri")
+        Timber.d("  📍 locations: ${locations.size}개")
+        Timber.d("  🎯 emotionText: ${viewModel.emotionText.value}")
+        Timber.d("  📊 uiState: ${viewModel.uiState.value}")
+        Timber.d("  🗺️ snapshotState: ${snapshotState != null}")
     }
 
     Column(
@@ -266,23 +286,46 @@ fun WalkingResultScreen(
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                snapshotState?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "지도 스냅샷",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                // emotionPhotoUri가 있으면 사진 표시, 없으면 지도 스냅샷 표시
+                if (emotionPhotoUri != null) {
+                    // PhotoUrl에서 bitmap으로 변환하여 표시
+                    val bitmap = remember(emotionPhotoUri) {
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(emotionPhotoUri!!)
+                            android.graphics.BitmapFactory.decodeStream(inputStream)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = "산책 사진",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                } else {
+                    // emotionPhotoUri가 없으면 지도 스냅샷 표시
+                    snapshotState?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "지도 스냅샷",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
                 }
 
+                // 항상 경로 표시 (사진이나 지도 위에)
                 PathThumbnail(
                     locations = locations.ifEmpty { session.locations },
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .padding(20.dp),
-                    pathColor = Color.White,
-                    endpointColor = Color.White,
+                    pathColor = if (emotionPhotoUri != null) Color(0xFF2196F3) else Color.White, // 사진 위에서는 파란색, 지도 위에서는 흰색
+                    endpointColor = if (emotionPhotoUri != null) Color(0xFF2196F3) else Color.White,
                 )
             }
         }
@@ -328,11 +371,11 @@ fun WalkingResultScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
-                onClick = { onNavigateToRouteDetail(locations.ifEmpty { session.locations }) },
+                onClick = { onNavigateBack() },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text(text = "기록 보러가기")
+                Text(text = "홈 으로")
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,

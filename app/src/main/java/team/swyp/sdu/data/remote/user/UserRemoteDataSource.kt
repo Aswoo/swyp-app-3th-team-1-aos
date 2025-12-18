@@ -1,5 +1,6 @@
 package team.swyp.sdu.data.remote.user
 
+import android.content.Context
 import android.net.Uri
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,6 +16,9 @@ import team.swyp.sdu.domain.model.Sex
 import team.swyp.sdu.domain.model.User
 import timber.log.Timber
 import java.io.File
+import java.io.FileOutputStream
+import dagger.hilt.android.qualifiers.ApplicationContext
+import team.swyp.sdu.data.api.user.UpdateUserProfileRequest
 
 /**
  * 사용자 정보를 서버에서 가져오는 데이터 소스
@@ -22,7 +26,29 @@ import java.io.File
 @Singleton
 class UserRemoteDataSource @Inject constructor(
     private val userApi: UserApi,
+    @ApplicationContext private val context: Context,
 ) {
+
+    /**
+     * URI를 File로 변환
+     */
+    private fun uriToFile(uri: Uri, context: Context): File? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val tempFile = File.createTempFile("upload_", ".jpg", context.cacheDir)
+            tempFile.deleteOnExit()
+
+            FileOutputStream(tempFile).use { output ->
+                inputStream.copyTo(output)
+            }
+
+            tempFile
+        } catch (e: Exception) {
+            Timber.e(e, "URI를 File로 변환 실패: $uri")
+            null
+        }
+    }
+
     suspend fun fetchUser(): User {
         return try {
             val dto = userApi.getUser()
@@ -88,34 +114,14 @@ class UserRemoteDataSource @Inject constructor(
         imageUri: String? = null,
     ): User {
         return try {
-            // 이미지 파일 처리
-            val imagePart = imageUri?.let { uri ->
-                try {
-                    val file = File(Uri.parse(uri).path ?: "")
-                    if (file.exists()) {
-                        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-                        MultipartBody.Part.createFormData("image", file.name, requestFile)
-                    } else {
-                        null
-                    }
-                } catch (e: Exception) {
-                    Timber.w(e, "이미지 파일 처리 실패: $uri")
-                    null
-                }
-            }
-
-            // 텍스트 데이터들
-            val nicknameBody = nickname.toRequestBody("text/plain".toMediaTypeOrNull())
-            val birthDateBody = birthDate.toRequestBody("text/plain".toMediaTypeOrNull())
-            val sexBody = sex.name.toRequestBody("text/plain".toMediaTypeOrNull())
 
             val dto = userApi.updateUserProfile(
-                image = imagePart,
-                nickname = nicknameBody,
-                birthDate = birthDateBody,
-                sex = sexBody,
+                UpdateUserProfileRequest(
+                    nickname = nickname,
+                    birthDate = birthDate,
+                    sex = sex.name,
+                )
             )
-
             Timber.d("사용자 프로필 업데이트 성공: $nickname")
             dto.toDomain()
         } catch (e: Exception) {

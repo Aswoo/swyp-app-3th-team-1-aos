@@ -39,6 +39,12 @@ data class WalkingSession(
     val activityStats: List<ActivityStats> = emptyList(),
     val primaryActivity: ActivityType? = null,
     val emotions: List<Emotion> = emptyList(),
+    // 산책 저장 API용 필드들
+    val preWalkEmotion: EmotionType? = null,
+    val postWalkEmotion: EmotionType? = null,
+    val note: String? = null,
+    val imageUrl: String? = null,
+    val createdDate: String? = null,
 ) : Parcelable {
     /**
      * 산책 시간 (초)

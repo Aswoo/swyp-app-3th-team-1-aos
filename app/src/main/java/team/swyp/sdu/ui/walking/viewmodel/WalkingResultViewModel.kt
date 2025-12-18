@@ -1,4 +1,4 @@
-package team.swyp.sdu.ui.walking
+package team.swyp.sdu.ui.walking.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.repository.WalkingSessionRepository
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -52,7 +53,7 @@ class WalkingResultViewModel @Inject constructor(
         val endOfWeek = startOfWeek.plusDays(6)
         return filter { session ->
             val date =
-                java.time.Instant.ofEpochMilli(session.startTime)
+                Instant.ofEpochMilli(session.startTime)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
             !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)

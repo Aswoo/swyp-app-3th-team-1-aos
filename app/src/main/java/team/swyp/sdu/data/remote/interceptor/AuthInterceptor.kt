@@ -50,23 +50,23 @@ class AuthInterceptor @Inject constructor(
         val isAuthFailure = (response.code == 302 && response.header("Location")?.contains("/login") == true) ||
                            (response.header("Content-Type")?.contains("text/html") == true && !request.url.encodedPath.contains("/auth/"))
 
-        if (isAuthFailure) {
-            Timber.e("AuthInterceptor - 인증 실패 감지! 코드: ${response.code}, Location: ${response.header("Location")}, URL: ${request.url}")
-            Timber.e("AuthInterceptor - 토큰 클리어 실행")
+        // if (isAuthFailure) {
+        //     Timber.e("AuthInterceptor - 인증 실패 감지! 코드: ${response.code}, Location: ${response.header("Location")}, URL: ${request.url}")
+        //     Timber.e("AuthInterceptor - 토큰 클리어 실행")
 
-            // 토큰 클리어 (동기 실행)
-            runBlocking {
-                try {
-                    tokenProvider.clearTokens()
-                    Timber.d("AuthInterceptor - 토큰 클리어됨")
-                } catch (e: Exception) {
-                    Timber.e(e, "토큰 클리어 실패")
-                }
-            }
+        //     // 토큰 클리어 (동기 실행)
+        //     runBlocking {
+        //         try {
+        //             tokenProvider.clearTokens()
+        //             Timber.d("AuthInterceptor - 토큰 클리어됨")
+        //         } catch (e: Exception) {
+        //             Timber.e(e, "토큰 클리어 실패")
+        //         }
+        //     }
 
-            // TODO: 로그인 화면으로 이동하는 이벤트 발생 (ViewModel이나 이벤트 버스 필요)
-            // 예: EventBus.post(AuthenticationExpiredEvent())
-        }
+        //     // TODO: 로그인 화면으로 이동하는 이벤트 발생 (ViewModel이나 이벤트 버스 필요)
+        //     // 예: EventBus.post(AuthenticationExpiredEvent())
+        // }
 
         return response
     }

@@ -2,6 +2,7 @@ package team.swyp.sdu.data.api.user
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
@@ -46,19 +47,18 @@ interface UserApi {
     /**
      * 사용자 정보 등록/업데이트 (온보딩 완료)
      *
-     * @param image 프로필 이미지 (선택사항)
+     * @param imageName 프로필 이미지 (선택사항)
      * @param nickname 닉네임
      * @param birthDate 생년월일 (ISO 8601 형식)
      * @param sex 성별
      * @return 등록된 사용자 정보
      */
-    @Multipart
+
+    // ✅ 이미지 없는 경우
     @PUT("/users")
     suspend fun updateUserProfile(
-        @Part image: MultipartBody.Part? = null,
-        @Part("nickname") nickname: RequestBody,
-        @Part("birthDate") birthDate: RequestBody,
-        @Part("sex") sex: RequestBody,
+        @Body body: UpdateUserProfileRequest
     ): RemoteUserDto
+
 }
 

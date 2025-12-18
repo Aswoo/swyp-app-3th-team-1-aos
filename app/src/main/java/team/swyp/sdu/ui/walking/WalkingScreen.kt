@@ -32,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,7 +119,7 @@ fun WalkingScreen(
         when (val state = uiState) {
             is WalkingUiState.Initial,
             is WalkingUiState.EmotionSelection,
-            -> {
+                -> {
                 EmotionSelectionView(
                     viewModel = viewModel,
                     onNextClick = {
@@ -317,7 +316,7 @@ private fun EmotionButton(
             EmotionType.HAPPY,
             EmotionType.JOYFUL,
             EmotionType.CONTENT,
-            -> MaterialTheme.colorScheme.surfaceVariant
+                -> MaterialTheme.colorScheme.surfaceVariant
 
             else -> Color(0xFFB3E5FC)
         }
@@ -357,7 +356,7 @@ private fun WalkingView(
     currentActivity: ActivityType?,
     currentMovementState: team.swyp.sdu.domain.service.MovementState?,
     currentSpeed: Float,
-    debugInfo: team.swyp.sdu.presentation.viewmodel.WalkingUiState.DebugInfo?,
+    debugInfo: WalkingUiState.DebugInfo?,
     isPaused: Boolean,
     onPauseToggle: () -> Unit,
     onStopClick: () -> Unit,
@@ -1026,4 +1025,3 @@ private fun formatDuration(millis: Long): String {
     val remainingSeconds = seconds % 60
     return String.format("%02d:%02d", minutes, remainingSeconds)
 }
-

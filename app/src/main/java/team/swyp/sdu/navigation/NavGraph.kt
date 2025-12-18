@@ -1,56 +1,52 @@
 package team.swyp.sdu.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import team.swyp.sdu.data.model.LocationPoint
+import team.swyp.sdu.presentation.viewmodel.UserViewModel
+import team.swyp.sdu.presentation.viewmodel.WalkingViewModel
 import team.swyp.sdu.ui.login.LoginScreen
 import team.swyp.sdu.ui.splash.SplashScreen
 import team.swyp.sdu.ui.screens.MainScreen
 import team.swyp.sdu.ui.screens.RouteDetailScreen
 import team.swyp.sdu.ui.screens.ShopScreen
-import team.swyp.sdu.ui.walking.EmotionRecordStep
-import team.swyp.sdu.ui.walking.EmotionSelectionStep
-import team.swyp.sdu.ui.walking.WalkingFinishStep
-import team.swyp.sdu.ui.walking.WalkingResultScreen
-import team.swyp.sdu.ui.walking.WalkingScreen
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import team.swyp.sdu.presentation.viewmodel.UserViewModel
+import team.swyp.sdu.ui.walking.*
+import team.swyp.sdu.ui.friend.FriendScreen
+import team.swyp.sdu.ui.friend.FriendSearchScreen
 import team.swyp.sdu.ui.mission.MissionRoute
 import team.swyp.sdu.ui.mypage.MyPageRoute
 import team.swyp.sdu.ui.mypage.goal.GoalManagementRoute
 import team.swyp.sdu.ui.mypage.settings.NotificationSettingsRoute
 import team.swyp.sdu.ui.mypage.userInfo.UserInfoManagementScreen
+import team.swyp.sdu.ui.onboarding.OnboardingScreen
 
-sealed class Screen(
-    val route: String,
-) {
+/* ----------------------- */
+/* Screen 정의 */
+/* ----------------------- */
+sealed class Screen(val route: String) {
+
     data object Splash : Screen("splash")
-
     data object Login : Screen("login")
-
     data object Main : Screen("main")
 
-    data object Search : Screen("pokemon_search")
-
-    data class Detail(
-        val pokemonName: String = "{pokemonName}",
-    ) : Screen("pokemon_detail/{pokemonName}") {
-        fun createRoute(pokemonName: String) = "pokemon_detail/$pokemonName"
-    }
-
+    // 🔥 Walking Graph
+    data object WalkingGraph : Screen("walking_graph")
     data object Walking : Screen("walking")
-
     data object WalkingFinishStep : Screen("walking_finish_step")
-
     data object EmotionSelectionStep : Screen("emotion_selection_step")
-
-    data object EmotionRecordStep : Screen("emotion_record_step")
-
+    data object EmotionRecord : Screen("emotion_record")
     data object WalkingResult : Screen("walking_result")
 
     data object RouteDetail : Screen("route_detail/{locationsJson}") {
@@ -61,24 +57,19 @@ sealed class Screen(
     }
 
     data object Shop : Screen("shop")
-
     data object Onboarding : Screen("onboarding")
-
     data object Friends : Screen("friends")
-
     data object FriendSearch : Screen("friend_search")
-
     data object GoalManagement : Screen("goal_management")
-
     data object Mission : Screen("mission")
-
     data object MyPage : Screen("mypage")
-
     data object UserInfoManagement : Screen("user_info_management")
-
     data object NotificationSettings : Screen("notification_settings")
 }
 
+/* ----------------------- */
+/* NavGraph */
+/* ----------------------- */
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -88,172 +79,136 @@ fun NavGraph(
         navController = navController,
         startDestination = Screen.Splash.route,
     ) {
+
+        /* Splash */
         composable(Screen.Splash.route) {
-            SplashScreen(
-                navController = navController,
-            )
+            SplashScreen(navController)
         }
 
+        /* Login */
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Screen.Main.route) {
-                        // 로그인 화면을 백 스택에서 제거
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onNavigateToOnboarding = {
                     navController.navigate(Screen.Onboarding.route) {
-                        // 로그인 화면을 백 스택에서 제거
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
             )
         }
 
+        /* Main */
         composable(Screen.Main.route) {
             MainScreen(
                 navController = navController,
             )
         }
 
-        composable(Screen.Walking.route) {
-            WalkingScreen(
-                onNavigateToFinish = {
-                    navController.navigate(Screen.WalkingFinishStep.route)
-                },
-            )
+        /* ----------------------- */
+        /* Walking Nested Graph */
+        /* ----------------------- */
+        navigation(
+            startDestination = Screen.Walking.route,
+            route = Screen.WalkingGraph.route,
+        ) {
+
+            composable(Screen.Walking.route) { entry ->
+                val viewModel =
+                    entry.sharedViewModel<WalkingViewModel>(navController)
+
+                WalkingScreen(
+                    viewModel = viewModel,
+                    onNavigateToFinish = {
+                        navController.navigate(Screen.WalkingFinishStep.route)
+                    },
+                )
+            }
+
+            composable(Screen.WalkingFinishStep.route) { entry ->
+                val viewModel =
+                    entry.sharedViewModel<WalkingViewModel>(navController)
+
+                WalkingFinishStep(
+                    onClose = {
+                        navController.popBackStack(Screen.Main.route, false)
+                    },
+                    onSkip = {
+                        navController.navigate(Screen.WalkingResult.route)
+                    },
+                    onRecordEmotion = {
+                        navController.navigate(Screen.EmotionSelectionStep.route)
+                    },
+                )
+            }
+
+            composable(Screen.EmotionSelectionStep.route) { entry ->
+                val viewModel =
+                    entry.sharedViewModel<WalkingViewModel>(navController)
+
+                EmotionSelectionStep(
+                    viewModel = viewModel,
+                    onNext = {
+                        navController.navigate(Screen.EmotionRecord.route)
+                    },
+                    onClose = {
+                        navController.popBackStack(Screen.Main.route, false)
+                    },
+                )
+            }
+
+            composable(Screen.EmotionRecord.route) { entry ->
+                val viewModel =
+                    entry.sharedViewModel<WalkingViewModel>(navController)
+
+                EmotionRecordStep(
+                    viewModel = viewModel,
+                    onNext = {
+                        navController.navigate(Screen.WalkingResult.route)
+                    },
+                    onClose = {
+                        navController.popBackStack(Screen.Main.route, false)
+                    },
+                )
+            }
+
+            composable(Screen.WalkingResult.route) { entry ->
+                val viewModel =
+                    entry.sharedViewModel<WalkingViewModel>(navController)
+
+                WalkingResultScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = {
+                        navController.popBackStack(Screen.Main.route, false)
+                    },
+                    onNavigateToRouteDetail = { locations ->
+                        navController.navigate(
+                            Screen.RouteDetail.createRoute(locations)
+                        )
+                    },
+                )
+            }
         }
 
-        composable(Screen.Shop.route) {
-            ShopScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-            )
-        }
-
-        composable(Screen.Friends.route) {
-            team.swyp.sdu.ui.friend.FriendScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToSearch = {
-                    navController.navigate(Screen.FriendSearch.route)
-                },
-            )
-        }
-
-        composable(Screen.FriendSearch.route) {
-            team.swyp.sdu.ui.friend.FriendSearchScreen(
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
-
-        composable(Screen.Onboarding.route) {
-            team.swyp.sdu.ui.onboarding.OnboardingScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onFinish = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                },
-            )
-        }
-
-        composable(Screen.WalkingFinishStep.route) {
-            WalkingFinishStep(
-                onClose = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-                onSkip = {
-                    navController.navigate(Screen.WalkingResult.route) {
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-                onRecordEmotion = {
-                    navController.navigate(Screen.EmotionSelectionStep.route)
-                },
-            )
-        }
-
-        composable(Screen.EmotionSelectionStep.route) {
-            val viewModel: team.swyp.sdu.presentation.viewmodel.WalkingViewModel =
-                androidx.hilt.navigation.compose.hiltViewModel()
-
-            EmotionSelectionStep(
-                viewModel = viewModel,
-                onNext = {
-                    navController.navigate(Screen.EmotionRecordStep.route)
-                },
-                onClose = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-            )
-        }
-
-        composable(Screen.EmotionRecordStep.route) {
-            val viewModel: team.swyp.sdu.presentation.viewmodel.WalkingViewModel =
-                androidx.hilt.navigation.compose.hiltViewModel()
-
-            EmotionRecordStep(
-                viewModel = viewModel,
-                onNext = {
-                    navController.navigate(Screen.WalkingResult.route) {
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-                onClose = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-            )
-        }
-
-        composable(Screen.WalkingResult.route) {
-            // WalkingResultScreen은 별도의 ViewModel 인스턴스를 사용하지 않고
-            // MainScreen의 WalkingScreen과 같은 ViewModel을 공유해야 함
-            // 하지만 현재 구조상 별도 인스턴스이므로, MainScreen으로 돌아가면
-            // WalkingScreen의 LaunchedEffect에서 자동으로 초기화됨
-            val viewModel: team.swyp.sdu.presentation.viewmodel.WalkingViewModel =
-                androidx.hilt.navigation.compose
-                    .hiltViewModel()
-
-            WalkingResultScreen(
-                onNavigateBack = {
-                    // 결과 화면에서 뒤로가기: Main 화면으로 이동
-                    // WalkingScreen의 LaunchedEffect에서 Completed 상태 감지 시 자동 초기화됨
-                    navController.navigate(Screen.Main.route) {
-                        // 백 스택에서 WalkingResult 제거
-                        popUpTo(Screen.Main.route) { inclusive = false }
-                    }
-                },
-                onNavigateToRouteDetail = { locations ->
-                    navController.navigate(Screen.RouteDetail.createRoute(locations))
-                },
-                viewModel = viewModel,
-            )
-        }
-
+        /* Route Detail */
         composable(
             route = Screen.RouteDetail.route,
-            arguments =
-                listOf(
-                    navArgument("locationsJson") {
-                        type = NavType.StringType
-                    },
-                ),
-        ) { backStackEntry ->
-            val locationsJson = backStackEntry.arguments?.getString("locationsJson") ?: "[]"
+            arguments = listOf(
+                navArgument("locationsJson") {
+                    type = NavType.StringType
+                },
+            ),
+        ) { entry ->
+            val locationsJson =
+                entry.arguments?.getString("locationsJson") ?: "[]"
+
             val locations =
-                try {
+                runCatching {
                     Json.decodeFromString<List<LocationPoint>>(locationsJson)
-                } catch (e: Exception) {
-                    emptyList()
-                }
+                }.getOrDefault(emptyList())
 
             RouteDetailScreen(
                 locations = locations,
@@ -263,27 +218,45 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.GoalManagement.route) {
-            GoalManagementRoute(
-                onNavigateBack = {
-                    navController.popBackStack()
+        /* Shop */
+        composable(Screen.Shop.route) {
+            ShopScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        /* Friends */
+        composable(Screen.Friends.route) {
+            FriendScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.FriendSearch.route)
                 },
             )
         }
 
-        composable(Screen.Mission.route) {
-            MissionRoute(
-                onNavigateBack = {
-                    navController.popBackStack()
+        composable(Screen.FriendSearch.route) {
+            FriendSearchScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        /* Onboarding */
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onFinish = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
                 },
             )
         }
 
+        /* MyPage */
         composable(Screen.MyPage.route) {
             MyPageRoute(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onNavigateCharacterEdit = {
                     navController.navigate(Screen.UserInfoManagement.route)
                 },
@@ -301,18 +274,41 @@ fun NavGraph(
 
         composable(Screen.UserInfoManagement.route) {
             UserInfoManagementScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 
         composable(Screen.NotificationSettings.route) {
             NotificationSettingsRoute(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.GoalManagement.route) {
+            GoalManagementRoute(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.Mission.route) {
+            MissionRoute(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
     }
 }
+
+/* ----------------------- */
+/* sharedViewModel extension */
+/* ----------------------- */
+@Composable
+inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(
+    navController: NavHostController,
+): T {
+    val navGraphRoute = destination.parent?.route ?: return hiltViewModel()
+    val parentEntry = remember(this) {
+        navController.getBackStackEntry(navGraphRoute)
+    }
+    return hiltViewModel(parentEntry)
+}
+

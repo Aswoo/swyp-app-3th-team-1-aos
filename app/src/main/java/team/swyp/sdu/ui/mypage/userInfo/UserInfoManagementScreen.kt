@@ -162,6 +162,10 @@ fun UserInfoManagementScreen(
             cameraImageUri?.let { uri ->
                 cameraLauncher.launch(uri)
             }
+        } else {
+            // 권한 거부 시 사용자에게 알림 (다시 시도할 수 있음)
+            Timber.d("카메라 권한 거부됨")
+//            errorMessage = "카메라 권한이 필요합니다. 다시 시도해주세요."
         }
     }
 
@@ -173,7 +177,8 @@ fun UserInfoManagementScreen(
             Timber.d("권한 승인됨, 갤러리 Launcher 실행")
             galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         } else {
-            Timber.d("권한 거부됨")
+            Timber.d("갤러리 권한 거부됨")
+//            errorMessage = "갤러리 접근 권한이 필요합니다. 다시 시도해주세요."
         }
     }
 

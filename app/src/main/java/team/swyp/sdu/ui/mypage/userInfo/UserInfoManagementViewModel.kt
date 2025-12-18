@@ -106,20 +106,20 @@ class UserInfoManagementViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 현재 사용자 정보 가져오기
-                val currentUser = when (val currentState = _uiState.value) {
-                    is UserInfoUiState.Success -> currentState.user
-                    else -> {
-                        _uiState.value = UserInfoUiState.Error("사용자 정보를 불러올 수 없습니다")
-                        return@launch
-                    }
-                }
+//                // 현재 사용자 정보 가져오기
+//                val currentUser = when (val currentState = _uiState.value) {
+//                    is UserInfoUiState.Success -> currentState.user
+//                    else -> {
+//                        _uiState.value = UserInfoUiState.Error("사용자 정보를 불러올 수 없습니다")
+//                        return@launch
+//                    }
+//                }
 
                 // 프로필 업데이트 API 호출
                 when (val result = userRepository.updateUserProfile(
                     nickname = nickname,
                     birthDate = birthDate,
-                    sex = currentUser.sex ?: Sex.MALE,
+                    sex = Sex.MALE,
                     imageUri = imageUri,
                 )) {
                     is Result.Success -> {
