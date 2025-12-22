@@ -14,17 +14,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
@@ -35,19 +31,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,54 +49,106 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import team.swyp.sdu.R
 import team.swyp.sdu.domain.model.Friend
-import team.swyp.sdu.ui.friend.FriendViewModel
+import team.swyp.sdu.ui.components.AppHeader
+import team.swyp.sdu.ui.components.SearchBar
 import team.swyp.sdu.ui.theme.Pretendard
+import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.TypeScale
 import team.swyp.sdu.ui.theme.WalkItTheme
+import team.swyp.sdu.ui.theme.walkItTypography
 
+/**
+ * 친구 목록 화면 Route
+ *
+ * ViewModel 주입 및 상태 수집을 담당합니다.
+ */
 @Composable
-fun FriendScreen(
+fun FriendRoute(
     onNavigateBack: () -> Unit,
     onNavigateToSearch: () -> Unit,
     viewModel: FriendViewModel = hiltViewModel(),
 ) {
-    val friends by viewModel.friends.collectAsStateWithLifecycle()
+    val filteredFriends by viewModel.filteredFriends.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
 
+    FriendScreenContent(
+        filteredFriends = filteredFriends,
+        query = query,
+        onNavigateBack = onNavigateBack,
+        onNavigateToSearch = onNavigateToSearch,
+        onQueryChange = viewModel::updateQuery,
+        onClearQuery = viewModel::clearQuery,
+        onBlockFriend = viewModel::blockFriend,
+    )
+}
+
+/**
+ * 친구 목록 화면 Content
+ *
+ * 실제 UI 컴포넌트를 렌더링합니다.
+ */
+@Composable
+private fun FriendScreenContent(
+    filteredFriends: List<Friend>,
+    query: String,
+    onNavigateBack: () -> Unit,
+    onNavigateToSearch: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onClearQuery: () -> Unit,
+    onBlockFriend: (String) -> Unit,
+) {
     var menuTargetId by remember { mutableStateOf<String?>(null) }
     var confirmTarget by remember { mutableStateOf<Friend?>(null) }
-
-    // 검색어가 입력되면 검색 결과 화면으로 이동
-    LaunchedEffect(query) {
-        val trimmedQuery = query.trim()
-        if (trimmedQuery.isNotBlank()) {
-            // ViewModel에서 debounce 처리되므로 바로 이동
-            onNavigateToSearch()
-        }
-    }
 
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .windowInsetsPadding(WindowInsets.navigationBars),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        TopBar(onNavigateBack = onNavigateBack)
+        AppHeader(title = "친구목록", onNavigateBack = onNavigateBack, rightAction = {
+            IconButton(
+                onClick = { onNavigateToSearch() },
+                modifier = Modifier.size(24.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_action_plus),
+                    contentDescription = "친구 추가로 이동",
+                    tint = SemanticColor.iconBlack,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        })
 
         SearchBar(
             query = query,
-            onQueryChange = viewModel::updateQuery,
-            onClear = {
-                viewModel.clearQuery()
-            },
+            onQueryChange = onQueryChange,
+            onClear = onClearQuery,
+            modifier = Modifier.padding(16.dp)
         )
-
-        // 친구 목록 화면
+        Row(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "${filteredFriends.size}",
+                // body S/medium
+                style = MaterialTheme.walkItTypography.bodyS.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = SemanticColor.textBorderGreenSecondary
+            )
+            Spacer(Modifier.width(4.dp))
+            // body S/regular
+            Text(
+                text = "명",
+                style = MaterialTheme.walkItTypography.bodyS,
+                color = SemanticColor.iconGrey
+            )
+        }
+        // 친구 목록 화면 (로컬 필터링)
         FriendListScreen(
-            friends = friends,
+            friends = filteredFriends,
             menuTargetId = menuTargetId,
             onMoreClick = { friend -> menuTargetId = friend.id },
             onMenuDismiss = { menuTargetId = null },
@@ -126,7 +171,7 @@ fun FriendScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.blockFriend(target.id)
+                        onBlockFriend(target.id)
                         confirmTarget = null
                     },
                 ) { Text("네") }
@@ -136,63 +181,6 @@ fun FriendScreen(
             },
         )
     }
-}
-
-@Composable
-private fun TopBar(
-    onNavigateBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        IconButton(onClick = onNavigateBack) {
-            Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "뒤로가기")
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { /* TODO: 알림 이동 */ }) {
-                Icon(imageVector = Icons.Filled.Notifications, contentDescription = "알림")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClear: () -> Unit,
-) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFFD9D9D9)),
-        placeholder = { Text("닉네임") },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-        trailingIcon =
-            if (query.isNotEmpty()) {
-                {
-                    IconButton(onClick = onClear) {
-                        Icon(Icons.Filled.Close, contentDescription = "지우기")
-                    }
-                }
-            } else null,
-        singleLine = true,
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFD9D9D9),
-                unfocusedContainerColor = Color(0xFFD9D9D9),
-                disabledContainerColor = Color(0xFFD9D9D9),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
-    )
 }
 
 /**
@@ -319,35 +307,20 @@ private fun FriendRow(
 @Composable
 private fun FriendScreenPreview() {
     WalkItTheme {
-        FriendScreenPreviewContent()
-    }
-}
-
-@Composable
-private fun FriendScreenPreviewContent() {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        TopBar(onNavigateBack = {})
-        SearchBar(query = "", onQueryChange = {}, onClear = {})
-        FriendListScreen(
-            friends =
-                listOf(
-                    Friend("1", "닉네임 01"),
-                    Friend("2", "닉네임 02"),
-                    Friend("3", "닉네임 03"),
-                ),
-            menuTargetId = null,
-            onMoreClick = {},
-            onMenuDismiss = {},
-            onBlockClick = {},
-            contentPaddingBottom = 0.dp,
+        FriendScreenContent(
+            filteredFriends = listOf(
+                Friend("1", "닉네임 01"),
+                Friend("2", "닉네임 02"),
+                Friend("3", "닉네임 03"),
+                Friend("4", "닉네임 04"),
+                Friend("5", "닉네임 05"),
+            ),
+            query = "",
+            onNavigateBack = {},
+            onNavigateToSearch = {},
+            onQueryChange = {},
+            onClearQuery = {},
+            onBlockFriend = {},
         )
     }
 }
-
-

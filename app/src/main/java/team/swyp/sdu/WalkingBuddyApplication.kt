@@ -1,6 +1,11 @@
 package team.swyp.sdu
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 import com.kakao.sdk.common.KakaoSdk
 import com.kakao.vectormap.KakaoMapSdk
 import com.navercorp.nid.NidOAuth
@@ -10,7 +15,13 @@ import dagger.hilt.EntryPoints
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import team.swyp.sdu.data.remote.billing.BillingManager
+import team.swyp.sdu.domain.service.FcmTokenManager
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -59,7 +70,46 @@ class WalkingBuddyApplication : Application() {
         billingManager.initialize()
         Timber.d("Google Play Billing 초기화 완료")
 
+        // Firebase 초기화
+        FirebaseApp.initializeApp(this)
+        Timber.d("Firebase 초기화 완료")
+
+        // NotificationChannel 생성
+        createNotificationChannel()
+
+        // FCM 토큰 초기화 및 로그 출력 (비동기, 지연 실행)
+        // FCM 서비스가 완전히 초기화될 때까지 대기
+        val fcmEntryPoint = EntryPoints.get(this, FcmEntryPoint::class.java)
+        val fcmTokenManager = fcmEntryPoint.fcmTokenManager()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            // FCM 초기화 완료를 위해 짧은 지연 추가
+            kotlinx.coroutines.delay(1000)
+            // 앱 실행 시마다 현재 토큰 로그 출력
+            fcmTokenManager.logCurrentToken()
+            // 토큰이 없으면 초기화
+            fcmTokenManager.initializeToken()
+        }
+
         Timber.d("WalkingBuddyApplication onCreate")
+    }
+
+    /**
+     * NotificationChannel 생성 (Android 8.0+)
+     */
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "walkit_notification_channel",
+                "알림",
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "앱 알림"
+            }
+
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+            Timber.d("NotificationChannel 생성 완료")
+        }
     }
 
     /**
@@ -69,5 +119,14 @@ class WalkingBuddyApplication : Application() {
     @InstallIn(SingletonComponent::class)
     interface BillingEntryPoint {
         fun billingManager(): BillingManager
+    }
+
+    /**
+     * FcmTokenManager를 주입받기 위한 EntryPoint
+     */
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface FcmEntryPoint {
+        fun fcmTokenManager(): FcmTokenManager
     }
 }
