@@ -1,7 +1,10 @@
 package team.swyp.sdu.ui.record.components
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -265,7 +269,13 @@ fun DaySection(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val currentIndex by remember {
-        derivedStateOf { listState.firstVisibleItemIndex.coerceAtMost((sessions.size - 1).coerceAtLeast(0)) }
+        derivedStateOf {
+            listState.firstVisibleItemIndex.coerceAtMost(
+                (sessions.size - 1).coerceAtLeast(
+                    0
+                )
+            )
+        }
     }
     val totalDistanceMeters by remember(sessions) {
         mutableStateOf(
@@ -413,7 +423,7 @@ private fun WeekNavigator(
 /**
  * 주간 라벨 포맷팅 함수
  * 예: "12월 첫째주", "12월 둘째주"
- * 
+ *
  * 해당 주의 시작일(월요일)이 속한 월을 기준으로,
  * 그 월의 첫 번째 날이 포함된 주를 첫째주로 계산합니다.
  */
@@ -421,19 +431,19 @@ private fun formatWeekLabel(date: LocalDate): String {
     val startOfWeek = date.with(DayOfWeek.MONDAY)
     val month = startOfWeek.monthValue
     val year = startOfWeek.year
-    
+
     // 해당 월의 첫 번째 날
     val firstDayOfMonth = LocalDate.of(year, month, 1)
-    
+
     // 첫 번째 날이 속한 주의 시작일(월요일) 찾기
     val firstDayWeekStart = when (val dayOfWeek = firstDayOfMonth.dayOfWeek.value) {
         1 -> firstDayOfMonth // 월요일이면 그대로
         else -> firstDayOfMonth.minusDays((dayOfWeek - 1).toLong()) // 이전 월요일
     }
-    
+
     // 주차 계산 (첫 번째 날이 속한 주의 시작일로부터 몇 주째인지)
     val weekNumber = ((startOfWeek.toEpochDay() - firstDayWeekStart.toEpochDay()) / 7).toInt() + 1
-    
+
     // 주차를 한글로 변환
     val weekLabel = when (weekNumber) {
         1 -> "첫째주"
@@ -444,7 +454,7 @@ private fun formatWeekLabel(date: LocalDate): String {
         6 -> "여섯째주"
         else -> "${weekNumber}째주"
     }
-    
+
     return "${month}월 $weekLabel"
 }
 
@@ -536,56 +546,46 @@ private fun CalendarDayCellRecord(
     onNavigateToDailyRecord: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Date Picker 다이얼로그 표시 여부
-    var showDatePicker by remember { mutableStateOf(false) }
+    val today = LocalDate.now()
+    val isToday = date == today
 
-    // 기본 구현: 날짜 숫자 표시
-    val backgroundColor = MaterialTheme.colorScheme.surface
+    val backgroundColor =
+        if (isToday) SemanticColor.stateAquaBlueTertiary else SemanticColor.backgroundWhitePrimary
+    val borderColor = if (isToday) SemanticColor.stateAquaBluePrimary else Color.Transparent
 
-    Box(
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .height(60.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(backgroundColor)
-            .clickable(onClick = { showDatePicker = true }),
-        contentAlignment = Alignment.Center,
+            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(4.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // Ripple 효과는 선택 가능
+                onClick = {
+                    Log.d("CalendarDayCellRecord", "Clicked $date")
+                    onNavigateToDailyRecord(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                }
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = day.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
+        Text(
+            text = day.toString(),
+            style = MaterialTheme.walkItTypography.bodyS,
+            color = Color(0xFF171717),
+        )
 
-            // 산책 세션이 있으면 초록색 점 표시
-            if (hasWalkSession) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF4CAF50)) // Green 색상
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Box(
+            modifier = Modifier
+                .size(4.dp)
+                .clip(CircleShape)
+                .background(if (hasWalkSession) SemanticColor.stateGreenPrimary else Color.Transparent)
+        )
     }
 
-    // Date Picker 다이얼로그
-    WheelDatePickerDialog(
-        showDialog = showDatePicker,
-        initialDate = date,
-        onDateSelected = { selectedDate ->
-            showDatePicker = false
-            onNavigateToDailyRecord(
-                selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            )
-        },
-        onDismiss = { showDatePicker = false }
-    )
 }
+
 
 /**
  * 주간 캘린더 그리드 컴포넌트
@@ -895,7 +895,8 @@ private fun calculateMonthlyStatsForRecord(
     sessions: List<WalkingSession>,
     month: YearMonth,
 ): MonthlyStatsRecord {
-    val monthStart = month.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val monthStart =
+        month.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     val monthEnd = month.atEndOfMonth().atTime(23, 59, 59)
         .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -910,7 +911,7 @@ private fun calculateMonthlyStatsForRecord(
     } else {
         0
     }
-    
+
     // 산책 시간 계산 (밀리초 -> 분)
     val totalWalkingTimeMillis = monthSessions.sumOf { session ->
         session.duration
@@ -922,15 +923,15 @@ private fun calculateMonthlyStatsForRecord(
         .map { it.postWalkEmotion }
         .groupingBy { it }
         .eachCount()
-    
+
     val primaryMood: String
     val description: String
-    
+
     if (emotionFrequency.isNotEmpty()) {
         // 가장 빈도가 높은 감정 찾기
         val mostFrequentEmotion = emotionFrequency.maxByOrNull { it.value }?.key
         val frequency = emotionFrequency[mostFrequentEmotion] ?: 0
-        
+
         primaryMood = getEmotionKoreanName(mostFrequentEmotion)
         description = "${primaryMood}을(를) 이번 달에 ${frequency}회 경험했어요!"
     } else {
@@ -1120,7 +1121,7 @@ fun WalkingDiaryCard(
                             modifier = Modifier.size(24.dp),
                         )
                     }
-                    
+
                     // 더보기 메뉴
                     DiaryMoreMenu(
                         expanded = showMenu,
@@ -1206,7 +1207,7 @@ private fun DiaryMoreMenu(
                 backgroundColor = Color(0xFFF3FFF8), // 연한 초록색 배경
                 onClick = onEditClick,
             )
-            
+
             // 삭제하기 메뉴 아이템
             DropMenuItem(
                 text = "삭제하기",
@@ -1219,8 +1220,6 @@ private fun DiaryMoreMenu(
         }
     }
 }
-
-
 
 
 /**
@@ -1245,7 +1244,7 @@ fun WalkingStatsCard(
     val totalDurationMillis = remember(sessions) {
         sessions.sumOf { it.duration }
     }
-    
+
     // 시간과 분으로 변환
     val totalHours = (totalDurationMillis / (1000 * 60 * 60)).toInt()
     val totalMinutes = ((totalDurationMillis / (1000 * 60)) % 60).toInt()
@@ -1321,7 +1320,7 @@ fun WalkingStatsCard(
                     Text(
                         text = "시간",
                         style = MaterialTheme.walkItTypography.bodyM.copy(
-                           fontWeight = FontWeight.Normal
+                            fontWeight = FontWeight.Normal
                         ),
                         color = Grey10,
                     )

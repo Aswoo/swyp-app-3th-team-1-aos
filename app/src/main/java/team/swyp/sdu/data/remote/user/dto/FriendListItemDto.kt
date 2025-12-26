@@ -14,9 +14,10 @@ data class FriendListItemDto(
     @SerialName("userId")
     val userId: Int,
     
-    @SerialName("userImageUrl")
+    @SerialName("imageName")
     val userImageUrl: String? = null,
 )
+
 
 
 

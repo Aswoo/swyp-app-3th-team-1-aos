@@ -2,7 +2,6 @@ package team.swyp.sdu.ui.home.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +28,8 @@ import team.swyp.sdu.ui.theme.White
 
 @Composable
 fun HomeHeader(
-    profileImageUrl : String
+    profileImageUrl: String,
+    onClickAlarm : () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -54,7 +55,18 @@ fun HomeHeader(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                val url = profileImageUrl ?: "https://images.pexels.com/photos/3861976/pexels-photo-3861976.jpeg?_gl=1*8iaqp3*_ga*ODU3MTU1NTU2LjE3NjYwMzk4MDQ.*_ga_8JE65Q40S6*czE3NjYwMzk4MDQkbzEkZzEkdDE3NjYwMzk4MzEkajMzJGwwJGgw"
+                IconButton(
+                    onClick = onClickAlarm,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_action_alarm),
+                        contentDescription = "alarm"
+                    )
+                }
+
+                val url = profileImageUrl
+                    ?: "https://images.pexels.com/photos/3861976/pexels-photo-3861976.jpeg?_gl=1*8iaqp3*_ga*ODU3MTU1NTU2LjE3NjYwMzk4MDQ.*_ga_8JE65Q40S6*czE3NjYwMzk4MDQkbzEkZzEkdDE3NjYwMzk4MzEkajMzJGwwJGgw"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(url)
@@ -73,6 +85,6 @@ fun HomeHeader(
 @Preview
 fun AppHeaderPreview() {
     WalkItTheme {
-        HomeHeader("https://images.pexels.com/photos/3861976/pexels-photo-3861976.jpeg?_gl=1*8iaqp3*_ga*ODU3MTU1NTU2LjE3NjYwMzk4MDQ.*_ga_8JE65Q40S6*czE3NjYwMzk4MDQkbzEkZzEkdDE3NjYwMzk4MzEkajMzJGwwJGgw")
+        HomeHeader("https://images.pexels.com/photos/3861976/pexels-photo-3861976.jpeg?_gl=1*8iaqp3*_ga*ODU3MTU1NTU2LjE3NjYwMzk4MDQ.*_ga_8JE65Q40S6*czE3NjYwMzk4MDQkbzEkZzEkdDE3NjYwMzk4MzEkajMzJGwwJGgw",{})
     }
 }

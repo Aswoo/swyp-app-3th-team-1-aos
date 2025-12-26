@@ -1,6 +1,9 @@
 package team.swyp.sdu.ui.record.friendrecord
 
 import team.swyp.sdu.domain.model.FollowerWalkRecord
+import team.swyp.sdu.core.Result
+
+
 
 /**
  * 좋아요 UI 상태
@@ -28,7 +31,6 @@ sealed interface FriendRecordUiState {
      */
     data class Success(
         val data: FollowerWalkRecord,
-        val walkId: Long? = null, // 좋아요 기능을 위한 walkId (별도 API로 받아올 예정)
         val like: LikeUiState = LikeUiState.EMPTY,
     ) : FriendRecordUiState
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import team.swyp.sdu.core.Result
+import team.swyp.sdu.data.repository.NotificationRepository
 import team.swyp.sdu.domain.repository.UserRepository
 import timber.log.Timber
 import javax.inject.Inject
@@ -142,4 +143,6 @@ class TermsAgreementViewModel @Inject constructor(
             }
         }
     }
+
+
 }

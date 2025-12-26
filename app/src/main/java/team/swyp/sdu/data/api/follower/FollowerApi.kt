@@ -7,6 +7,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import team.swyp.sdu.data.remote.user.dto.FriendListItemDto
 import team.swyp.sdu.data.remote.walking.dto.FollowerWalkRecordDto
 
 /**
@@ -28,18 +29,18 @@ interface FollowerApi {
         @Query("lon") lon: Double? = null,
     ): Response<FollowerWalkRecordDto>
 
-    /**
-     * 내 최근 산책 기록 조회
-     *
-     * @param lat 위도 (선택사항)
-     * @param lon 경도 (선택사항)
-     * @return 내 최근 산책 기록 정보
-     */
-    @GET("/walk/follower/me")
-    suspend fun getMyRecentWalkRecord(
-        @Query("lat") lat: Double? = null,
-        @Query("lon") lon: Double? = null,
-    ): Response<FollowerWalkRecordDto>
+//    /**
+//     * 내 최근 산책 기록 조회
+//     *
+//     * @param lat 위도 (선택사항)
+//     * @param lon 경도 (선택사항)
+//     * @return 내 최근 산책 기록 정보
+//     */
+//    @GET("/walk/follower/me")
+//    suspend fun getMyRecentWalkRecord(
+//        @Query("lat") lat: Double? = null,
+//        @Query("lon") lon: Double? = null,
+//    ): Response<FollowerWalkRecordDto>
 
     /**
      * 닉네임으로 사용자 팔로우
@@ -69,9 +70,28 @@ interface FollowerApi {
      * @param nickname 팔로우 요청을 거절할 사용자의 닉네임
      * @return Response로 감싼 응답 (성공/실패 확인 가능)
      */
-    @DELETE("/follows/nickname/{nickname}")
+    @DELETE("/follows/following/{nickname}")
     suspend fun rejectFollowRequest(
         @Path("nickname") nickname: String
     ): Response<Unit>
+
+    /**
+     * 팔로우 요청 거절/삭제
+     *
+     * @param nickname 차단할 사용자의 닉네임
+     * @return Response로 감싼 응답 (성공/실패 확인 가능)
+     */
+    @DELETE("/follows/nickname/{nickname}")
+    suspend fun blockUser(
+        @Path("nickname") nickname: String
+    ): Response<Unit>
+
+
+    @GET("/follows")
+    suspend fun getFriends(
+    ): List<FriendListItemDto>
+
+
+
 }
 

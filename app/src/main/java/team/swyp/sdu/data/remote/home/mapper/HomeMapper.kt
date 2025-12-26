@@ -5,7 +5,7 @@ import team.swyp.sdu.data.remote.home.dto.HomeData
 import team.swyp.sdu.data.remote.home.dto.PointDto
 import team.swyp.sdu.data.remote.home.dto.WalkResponseDto
 import team.swyp.sdu.data.remote.home.dto.WeatherDto
-import team.swyp.sdu.data.remote.home.dto.WeeklyMissionDto
+import team.swyp.sdu.data.remote.mission.dto.mission.WeeklyMissionDto
 import team.swyp.sdu.data.remote.walking.dto.CharacterDto
 import team.swyp.sdu.domain.model.Character
 import team.swyp.sdu.domain.model.HomeData as DomainHomeData
@@ -43,7 +43,7 @@ object HomeMapper {
             backgroundImageName = backgroundImageName,
             level = level,
             grade = grade,
-            nickName = nickName,
+            nickName = nickName ?: "게스트",
         )
     }
 
@@ -114,6 +114,7 @@ object HomeMapper {
         )
     }
 }
+
 
 
 

@@ -23,15 +23,18 @@ data class Emotion(
  * 감정 타입 열거형
  */
 @Serializable
-enum class EmotionType {
+enum class EmotionType(
+    val ko: String,
+    val en: String,
+) {
     // 긍정 감정
-    HAPPY,          // 기쁨
-    JOYFUL,         // 즐거움
-    CONTENT,        // 행복함
+    HAPPY("기쁨", "Happy"),
+    JOYFUL("즐거움", "Joyful"),
+    CONTENT("행복함", "Content"),
 
     // 부정 감정
-    DEPRESSED,      // 우울함
-    TIRED,          // 지침
-    ANXIOUS         // 짜증남
+    DEPRESSED("우울함", "Depressed"),
+    TIRED("지침", "Tired"),
+    ANXIOUS("짜증남", "Anxious");
 }
 

@@ -26,18 +26,10 @@ class MainActivity : ComponentActivity() {
             WalkItTheme {
                 val userViewModel: UserViewModel = hiltViewModel()
                 val navController = rememberNavController()
-                Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .navigationBarsPadding()
-                ) { paddingValues ->
-                    Box(modifier = Modifier.padding(paddingValues)) {
-                        NavGraph(
-                            navController = navController,
-                            userViewModel = userViewModel
-                        )
-                    }
-                }
+                NavGraph(
+                    navController = navController,
+                    userViewModel = userViewModel
+                )
             }
         }
     }

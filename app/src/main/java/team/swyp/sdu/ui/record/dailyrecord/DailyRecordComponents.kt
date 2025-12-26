@@ -1,4 +1,4 @@
-package team.swyp.sdu.ui.record
+package team.swyp.sdu.ui.record.dailyrecord
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

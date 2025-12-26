@@ -29,6 +29,7 @@ import team.swyp.sdu.R
 import team.swyp.sdu.ui.theme.BluePrimary
 import team.swyp.sdu.ui.theme.BlueSecondary
 import team.swyp.sdu.ui.theme.BlueTertiary
+import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.WalkItTheme
 import team.swyp.sdu.ui.theme.walkItTypography
 
@@ -107,16 +108,14 @@ private fun InfoIcon(
 ) {
     Box(
         modifier = modifier
-            .size(24.dp)
-            .clip(CircleShape)
-            .background(BluePrimary),
+            .size(20.dp)
+            .clip(CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_info_exclamation),
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(16.dp),
+            tint = SemanticColor.stateBluePrimary,
         )
     }
 }

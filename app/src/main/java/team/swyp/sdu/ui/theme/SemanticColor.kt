@@ -3,7 +3,7 @@ package team.swyp.sdu.ui.theme
 object SemanticColor {
 
     // background
-    val backgroundWhitePrimary = White
+    val backgroundWhitePrimary = Grey1
     val backgroundWhiteSecondary = Grey2
     val backgroundWhiteTertiary = Grey3
     val backgroundWhiteQuaternary = Grey4
@@ -62,6 +62,7 @@ object SemanticColor {
     // button
     val buttonPrimaryDefault = GreenPrimary
     val buttonPrimaryActive = Green5
+    val buttonPrimaryDisabled = Grey3
     val buttonDisabled = Grey6
 
 }

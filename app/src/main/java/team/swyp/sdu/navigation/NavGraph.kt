@@ -31,8 +31,8 @@ import team.swyp.sdu.ui.mypage.settings.NotificationSettingsRoute
 import team.swyp.sdu.ui.mypage.userInfo.UserInfoManagementScreen
 import team.swyp.sdu.ui.onboarding.OnboardingScreen
 import team.swyp.sdu.ui.alarm.AlarmScreen
-import team.swyp.sdu.ui.record.DailyRecordRoute
 import team.swyp.sdu.ui.login.terms.TermsAgreementRoute
+import team.swyp.sdu.ui.record.dailyrecord.DailyRecordRoute
 
 /* ----------------------- */
 /* Screen 정의 */
@@ -63,6 +63,7 @@ sealed class Screen(val route: String) {
     data object Onboarding : Screen("onboarding")
     data object Friends : Screen("friends")
     data object FriendSearch : Screen("friend_search")
+    data object FriendSearchDetail : Screen("friend_search_detail")
     data object GoalManagement : Screen("goal_management")
     data object Mission : Screen("mission")
     data object MyPage : Screen("mypage")
@@ -272,6 +273,9 @@ fun NavGraph(
 
         composable(Screen.FriendSearch.route) {
             FriendSearchScreen(
+                onNavigateToDetail = {
+                    navController.navigate(Screen.FriendSearchDetail.route)
+                },
                 onNavigateBack = {
                     // Friends.route로 돌아가거나, 없으면 Main.route로
                     if (!navController.popBackStack(Screen.Friends.route, false)) {

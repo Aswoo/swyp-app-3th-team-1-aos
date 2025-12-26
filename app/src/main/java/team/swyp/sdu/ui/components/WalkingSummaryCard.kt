@@ -213,8 +213,9 @@ private fun RowScope.SummarySection(
 
         // 값 + 단위
         Row(
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
             // 값
             Text(
@@ -226,6 +227,7 @@ private fun RowScope.SummarySection(
                 letterSpacing = (-0.22f).sp, // letterSpacing -0.22px
                 color = Color(0xFF191919), // color/text-border/primary
             )
+            Spacer(Modifier.width(4.dp))
 
             // 단위 (있는 경우만 표시)
             unit?.let {

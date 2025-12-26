@@ -8,9 +8,17 @@ import team.swyp.sdu.domain.model.WeeklyMission
  */
 interface MissionRepository {
     /**
+     *  활성화된 주간 미션  조회
+     */
+    suspend fun getActiveWeeklyMission(): Result<List<WeeklyMission>>
+
+    /**
      * 주간 미션 목록 조회
      */
-    suspend fun getWeeklyMissions(): Result<List<WeeklyMission>>
+    suspend fun getAllWeeklyMissions(): Result<List<WeeklyMission>>
+
+
+
 }
 
 

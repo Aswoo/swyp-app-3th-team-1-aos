@@ -265,8 +265,7 @@ fun TermsAgreementDialog(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .fillMaxSize(),
             contentAlignment = Alignment.BottomCenter,
         ) {
             TermsAgreementDialogContent(

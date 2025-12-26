@@ -27,8 +27,11 @@ fun MyPageSettingsSection(
     onNavigateNotificationSetting: () -> Unit,
     onNavigateUserInfoEdit: () -> Unit,
     onNavigateGoalManagement: () -> Unit,
+    onNavigateMission : () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val horizontalPadding = 16.dp
+    val verticalPadding = 12.dp
     Column() {
         // 일반 설정 섹션
         SectionCard(modifier = modifier) {
@@ -37,13 +40,15 @@ fun MyPageSettingsSection(
                 style = MaterialTheme.walkItTypography.bodyL.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = Grey10
+                color = Grey10,
+                modifier = Modifier.padding(top = verticalPadding, start = horizontalPadding)
             )
             Spacer(Modifier.height(8.dp))
 
             MenuItem("알람 설정", onNavigateNotificationSetting)
             Spacer(Modifier.height(8.dp))
             MenuItem("내 정보 관리", onNavigateUserInfoEdit)
+            Spacer(Modifier.height(12.dp))
         }
 
         Spacer(Modifier.height(8.dp))
@@ -51,16 +56,18 @@ fun MyPageSettingsSection(
         // 추가 설정 섹션
         SectionCard {
             Text(
-                modifier = modifier.padding(top = 12.dp, start = 16.dp),
                 text = "목표",
                 style = MaterialTheme.walkItTypography.bodyL.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = Grey10
+                color = Grey10,
+                modifier = Modifier.padding(top = verticalPadding, start = horizontalPadding)
             )
             Spacer(Modifier.height(8.dp))
-
-            MenuItem("내 목표 관리", onNavigateGoalManagement)
+            MenuItem("내 목표", onNavigateGoalManagement)
+            Spacer(Modifier.height(8.dp))
+            MenuItem("내 미션",onNavigateMission)
+            Spacer(Modifier.height(12.dp))
         }
     }
 
@@ -74,9 +81,11 @@ fun MypageSettingSectionPreview(modifier: Modifier = Modifier) {
             onNavigateNotificationSetting = {},
             onNavigateUserInfoEdit = {},
             onNavigateGoalManagement = {},
+            onNavigateMission = {}
         )
     }
 }
+
 
 
 

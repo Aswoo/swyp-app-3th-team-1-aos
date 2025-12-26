@@ -32,3 +32,4 @@ interface CharacterRepository {
     suspend fun deleteCharacter(nickname: String): Result<Unit>
 }
 
+

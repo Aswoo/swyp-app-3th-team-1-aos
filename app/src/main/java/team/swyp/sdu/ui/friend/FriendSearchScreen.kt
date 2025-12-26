@@ -30,6 +30,7 @@ import team.swyp.sdu.ui.friend.component.FriendCard
 @Composable
 fun FriendSearchScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
     viewModel: FriendViewModel = hiltViewModel(),
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
@@ -41,7 +42,7 @@ fun FriendSearchScreen(
             Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+               ,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppHeader(title = "친구 찾기", onNavigateBack = {
@@ -69,6 +70,10 @@ fun FriendSearchScreen(
         SearchResultScreen(
             searchUiState = searchUiState,
             isFollowing = isFollowing,
+            onNavigateToDetail = {
+                nickName ->
+                onNavigateToDetail(nickName)
+            },
             onFollowClick = {
                 // 검색 결과가 Success 상태일 때만 팔로우 가능
                 if (searchUiState is SearchUiState.Success) {
@@ -90,6 +95,7 @@ fun FriendSearchScreen(
 private fun SearchResultScreen(
     searchUiState: SearchUiState,
     isFollowing: Boolean,
+    onNavigateToDetail: (String) -> Unit,
     onFollowClick: () -> Unit,
     contentPaddingBottom: Dp,
 ) {
@@ -135,6 +141,7 @@ private fun SearchResultScreen(
                             imageName = searchUiState.result.imageName,
                             followStatus = searchUiState.result.followStatus,
                             onFollowClick = onFollowClick,
+                            onCardClick = onNavigateToDetail,
                             enabled = !isFollowing,
                         )
                     }

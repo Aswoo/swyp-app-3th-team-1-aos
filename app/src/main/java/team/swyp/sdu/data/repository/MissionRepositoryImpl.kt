@@ -17,13 +17,24 @@ class MissionRepositoryImpl @Inject constructor(
     private val missionRemoteDataSource: MissionRemoteDataSource,
 ) : MissionRepository {
 
-    override suspend fun getWeeklyMissions(): Result<List<WeeklyMission>> {
+    override suspend fun getActiveWeeklyMission(): Result<List<WeeklyMission>> {
         return try {
-            val weeklyMissionsDto = missionRemoteDataSource.getWeeklyMissions()
+            val weeklyMissionsDto = missionRemoteDataSource.getActiveWeeklyMission()
             val weeklyMissions = weeklyMissionsDto.map { WeeklyMissionMapper.toDomain(it) }
             Result.Success(weeklyMissions)
         } catch (e: Exception) {
             Timber.e(e, "주간 미션 조회 실패")
+            Result.Error(e)
+        }
+    }
+    override suspend fun getAllWeeklyMissions(): Result<List<WeeklyMission>> {
+        return try {
+            val response = missionRemoteDataSource.getAllWeeklyMissions()
+            val weeklyMissions = WeeklyMissionMapper.toDomainList(response)
+            Timber.d("주간 미션 목록 조회 성공: ${weeklyMissions.size}개")
+            Result.Success(weeklyMissions)
+        } catch (e: Exception) {
+            Timber.e(e, "주간 미션 목록 조회 실패")
             Result.Error(e)
         }
     }

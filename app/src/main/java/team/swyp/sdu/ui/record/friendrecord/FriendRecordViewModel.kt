@@ -12,128 +12,109 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import team.swyp.sdu.core.Result
-import team.swyp.sdu.data.remote.walking.WalkRemoteDataSource
 import team.swyp.sdu.data.remote.walking.mapper.FollowerWalkRecordMapper
 import team.swyp.sdu.domain.model.FollowerWalkRecord
+import team.swyp.sdu.domain.repository.WalkRepository
 import timber.log.Timber
+import java.util.LinkedHashMap
 import javax.inject.Inject
 
-/**
- * 친구 기록 화면 ViewModel
- */
-@HiltViewModel
-class FriendRecordViewModel
-    @Inject
-    constructor(
-        private val walkRemoteDataSource: WalkRemoteDataSource,
-    ) : ViewModel() {
-        private val _uiState = MutableStateFlow<FriendRecordUiState>(FriendRecordUiState.Loading)
-        val uiState: StateFlow<FriendRecordUiState> = _uiState.asStateFlow()
-        
-        // Debounce를 위한 Job
-        private var likeToggleJob: Job? = null
-        private val debounceDelayMs = 500L // 500ms debounce
+private const val MAX_CACHE_SIZE = 5
+private const val LIKE_DEBOUNCE_MS = 500L
 
-        /**
-         * 팔로워 산책 기록 조회
-         *
-         * @param nickname 팔로워 닉네임
-         */
-        fun loadFollowerWalkRecord(nickname: String) {
-            viewModelScope.launch {
-                _uiState.value = FriendRecordUiState.Loading
-                
-                withContext(Dispatchers.IO) {
-                    val result = walkRemoteDataSource.getFollowerWalkRecord(nickname)
-                    _uiState.value = when (result) {
-                        is Result.Success -> {
-                            val data = FollowerWalkRecordMapper.toDomain(result.data)
-                            FriendRecordUiState.Success(
-                                data = data,
-                                like = LikeUiState.EMPTY, // TODO: API에서 좋아요 정보 가져오기
-                            )
-                        }
-                        is Result.Error -> FriendRecordUiState.Error(result.message)
-                        Result.Loading -> FriendRecordUiState.Loading
-                    }
-                }
+// 한 팔로워의 산책 기록 하나만 캐시
+data class FriendRecordState(
+    val record: FollowerWalkRecord
+)
+
+@HiltViewModel
+class FriendRecordViewModel @Inject constructor(
+    private val walkRepository: WalkRepository,
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<FriendRecordUiState>(FriendRecordUiState.Loading)
+    val uiState: StateFlow<FriendRecordUiState> = _uiState.asStateFlow()
+
+    private var likeToggleJob: Job? = null
+
+    // LRU 캐시: 최근 MAX_CACHE_SIZE명 저장
+    private val friendStateCache: LinkedHashMap<String, FriendRecordState> =
+        object : LinkedHashMap<String, FriendRecordState>(MAX_CACHE_SIZE + 1, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, FriendRecordState>?): Boolean {
+                return size > MAX_CACHE_SIZE
             }
         }
 
-        /**
-         * 좋아요 토글 (debounce 적용)
-         */
-        fun toggleLike() {
-            val currentState = _uiState.value
-            if (currentState !is FriendRecordUiState.Success) {
-                return
-            }
-            
-            val walkId = currentState.walkId
-            if (walkId == null) {
-                Timber.w("walkId가 없어 좋아요 기능을 사용할 수 없습니다")
-                return
-            }
-            
-            val isCurrentlyLiked = currentState.like.isLiked
-            
-            // 즉시 UI 업데이트 (Optimistic Update)
-            val newLikeState = if (isCurrentlyLiked) {
-                currentState.like.copy(
-                    isLiked = false,
-                    count = (currentState.like.count - 1).coerceAtLeast(0),
+    /**
+     * 팔로워 산책 기록 로드
+     */
+    fun loadFollowerWalkRecord(nickname: String) {
+        viewModelScope.launch {
+            // 1️⃣ 캐시 확인
+            friendStateCache[nickname]?.let { cachedState ->
+                _uiState.value = FriendRecordUiState.Success(
+                    data = cachedState.record,
+                    like = LikeUiState.EMPTY
                 )
-            } else {
-                currentState.like.copy(
-                    isLiked = true,
-                    count = currentState.like.count + 1,
-                )
+                return@launch
             }
-            _uiState.value = currentState.copy(like = newLikeState)
-            
-            // 이전 Job 취소 (debounce)
-            likeToggleJob?.cancel()
-            
-            // 새로운 Job 시작
-            likeToggleJob = viewModelScope.launch {
-                delay(debounceDelayMs)
-                
-                // API 호출
-                val result = withContext(Dispatchers.IO) {
-                    if (isCurrentlyLiked) {
-                        walkRemoteDataSource.unlikeWalk(walkId)
-                    } else {
-                        walkRemoteDataSource.likeWalk(walkId)
-                    }
+
+            // 2️⃣ 로딩 상태
+            _uiState.value = FriendRecordUiState.Loading
+
+            // 3️⃣ 서버 요청
+            val result = withContext(Dispatchers.IO) {
+                walkRepository.getFollowerWalkRecord(nickname)
+            }
+
+            when (result) {
+                is Result.Success -> {
+                    val record = FollowerWalkRecordMapper.toDomain(result.data)
+
+                    // 4️⃣ 캐시에 저장 (성공 시)
+                    friendStateCache[nickname] = FriendRecordState(record)
+
+                    // 5️⃣ UI 업데이트
+                    _uiState.value = FriendRecordUiState.Success(
+                        data = record,
+                        like = LikeUiState.EMPTY
+                    )
                 }
-                
-                // API 호출 결과에 따라 UI 상태 업데이트
-                when (result) {
-                    is Result.Success -> {
-                        // 성공 시 이미 업데이트된 상태 유지
-                        Timber.d("좋아요 토글 성공: walkId=$walkId, isLiked=${!isCurrentlyLiked}")
-                    }
-                    is Result.Error -> {
-                        // 실패 시 원래 상태로 롤백
-                        val rollbackState = currentState.like.copy(
-                            isLiked = isCurrentlyLiked,
-                            count = if (isCurrentlyLiked) {
-                                currentState.like.count
-                            } else {
-                                (currentState.like.count - 1).coerceAtLeast(0)
-                            }
-                        )
-                        _uiState.value = currentState.copy(like = rollbackState)
-                        
-                        Timber.w("좋아요 토글 실패: ${result.message}")
-                        // TODO: 에러 메시지를 사용자에게 표시 (스낵바 등)
-                    }
-                    Result.Loading -> {
-                        // 로딩 상태는 이미 UI에서 처리됨
-                    }
-                }
+                is Result.Error -> _uiState.value = FriendRecordUiState.Error(result.message)
+                Result.Loading -> {} // 이미 Loading 상태
             }
         }
     }
 
+    /**
+     * 좋아요 토글 (Optimistic UI + debounce)
+     */
+    fun toggleLike() {
+        val currentState = _uiState.value as? FriendRecordUiState.Success ?: return
+        val walkId = currentState.data.walkId
+        val isCurrentlyLiked = currentState.like.isLiked
 
+        // 1️⃣ Optimistic UI 업데이트
+        _uiState.value = currentState.copy(
+            like = currentState.like.copy(
+                isLiked = !isCurrentlyLiked,
+                count = if (isCurrentlyLiked) (currentState.like.count - 1).coerceAtLeast(0)
+                else currentState.like.count + 1
+            )
+        )
+
+        // 2️⃣ debounce
+        likeToggleJob?.cancel()
+        likeToggleJob = viewModelScope.launch {
+            delay(LIKE_DEBOUNCE_MS)
+            val result = withContext(Dispatchers.IO) {
+                if (isCurrentlyLiked) walkRepository.unlikeWalk(walkId)
+                else walkRepository.likeWalk(walkId)
+            }
+        }
+    }
+
+    fun deleteFriend(nickname: String) {
+        friendStateCache.remove(nickname)
+    }
+}

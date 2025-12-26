@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import team.swyp.sdu.core.Result
+import team.swyp.sdu.data.remote.friend.FollowRemoteDataSource
 import team.swyp.sdu.data.remote.notification.NotificationRemoteDataSource
 import team.swyp.sdu.data.remote.user.UserRemoteDataSource
 import team.swyp.sdu.domain.model.AlarmType
@@ -25,7 +26,7 @@ class AlarmViewModel
 @Inject
 constructor(
     private val notificationRemoteDataSource: NotificationRemoteDataSource,
-    private val userRemoteDataSource: UserRemoteDataSource,
+    private val followRemoteDataSource: FollowRemoteDataSource,
 ) : ViewModel() {
 
     private val _alarms = MutableStateFlow<List<AlarmItem>>(emptyList())
@@ -137,7 +138,7 @@ constructor(
                 }
 
                 Timber.d("팔로우 요청 수락 시작: ${alarm.senderNickname}")
-                userRemoteDataSource.acceptFollowRequest(alarm.senderNickname)
+                followRemoteDataSource.acceptFollowRequest(alarm.senderNickname)
                 Timber.d("팔로우 요청 수락 성공: ${alarm.senderNickname}")
                 
                 // 알람 목록에서 제거
@@ -162,7 +163,7 @@ constructor(
                 }
 
                 Timber.d("팔로우 요청 거절 시작: ${alarm.senderNickname}")
-                userRemoteDataSource.rejectFollowRequest(alarm.senderNickname)
+                followRemoteDataSource.rejectFollowRequest(alarm.senderNickname)
                 Timber.d("팔로우 요청 거절 성공: ${alarm.senderNickname}")
                 
                 // 알람 목록에서 제거

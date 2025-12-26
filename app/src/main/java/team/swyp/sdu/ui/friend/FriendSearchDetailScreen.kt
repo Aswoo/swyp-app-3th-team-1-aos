@@ -67,8 +67,10 @@ fun FriendSearchDetailRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // 화면 진입 시 데이터 로드
-    LaunchedEffect(nickname, lat, lon) {
-        viewModel.loadFollowerWalkRecord(nickname, lat, lon)
+    LaunchedEffect(nickname) {
+        if (nickname != null) {
+            viewModel.loadFollowerWalkRecord(nickname, lat, lon)
+        }
     }
 
     FriendSearchDetailScreen(
@@ -92,6 +94,7 @@ fun FriendSearchDetailScreen(
     onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+
     when (val state = uiState) {
         is FriendSearchUiState.Loading -> {
             Box(

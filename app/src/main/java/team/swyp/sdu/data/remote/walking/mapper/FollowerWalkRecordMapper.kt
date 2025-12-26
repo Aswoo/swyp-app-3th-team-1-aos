@@ -14,10 +14,13 @@ object FollowerWalkRecordMapper {
     fun toDomain(dto: FollowerWalkRecordDto): FollowerWalkRecord {
         return FollowerWalkRecord(
             character = toDomain(dto.characterDto),
-            walkProgressPercentage = dto.walkProgressPercentage,
-            createdDate = dto.createdDate,
+            walkProgressPercentage = dto.walkProgressPercentage ?: "0",
+            createdDate = dto.createdDate ?: "0",
             stepCount = dto.stepCount,
             totalDistance = dto.totalDistance,
+            likeCount = dto.likeCount,
+            liked = dto.liked,
+            walkId = dto.walkId ?: -1
         )
     }
 
@@ -33,7 +36,7 @@ object FollowerWalkRecordMapper {
             backgroundImageName = dto.backgroundImageName,
             level = dto.level,
             grade = dto.grade,
-            nickName = dto.nickName,
+            nickName = dto.nickName ?: "게스트",
         )
     }
 }

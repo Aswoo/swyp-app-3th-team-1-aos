@@ -27,3 +27,4 @@ data class CharacterEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
+

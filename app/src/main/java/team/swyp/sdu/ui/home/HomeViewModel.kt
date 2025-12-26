@@ -8,13 +8,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import team.swyp.sdu.core.Result
 import team.swyp.sdu.core.onError
 import team.swyp.sdu.core.onSuccess
 import team.swyp.sdu.domain.model.Goal
 import timber.log.Timber
-import team.swyp.sdu.data.model.Emotion
 import team.swyp.sdu.data.model.EmotionType
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.model.LocationPoint
@@ -30,7 +32,8 @@ import team.swyp.sdu.domain.model.Weather
 import team.swyp.sdu.domain.model.WeeklyMission
 import team.swyp.sdu.domain.model.WalkRecord
 import team.swyp.sdu.data.remote.walking.dto.Grade
-import team.swyp.sdu.domain.model.MissionCategory
+import team.swyp.sdu.presentation.viewmodel.CalendarViewModel.WalkAggregate
+import team.swyp.sdu.utils.CalenderUtils.weekRange
 import team.swyp.sdu.utils.LocationConstants
 import java.time.LocalDate
 import java.time.ZoneId
@@ -70,6 +73,8 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val today = MutableStateFlow(LocalDate.now())
 
     init {
         loadHomeData()
@@ -143,9 +148,11 @@ class HomeViewModel @Inject constructor(
                 is Result.Success -> goalResult.data
                 else -> null
             }
-            
+
+            val (start, end) = weekRange(today.value)
+
             walkingSessionRepository
-                .getAllSessions()
+                .getSessionsBetween(start,end)
                 .catch { e ->
                     _uiState.value = HomeUiState.Error(e.message ?: "세션을 불러오지 못했습니다.")
                 }
@@ -156,9 +163,9 @@ class HomeViewModel @Inject constructor(
                         .take(7)
                         .map { it.postWalkEmotion }
                     val dominantEmotion = findDominantEmotion(thisWeekSessions)
-                    
-                    // 주간 미션 (Domain 모델 사용)
-                    val missions = homeData.weeklyMission?.let { 
+
+                    // 주간 미션
+                    val missions = homeData.weeklyMission?.let {
                         listOf(it)
                     } ?: emptyList()
                     
@@ -189,7 +196,7 @@ class HomeViewModel @Inject constructor(
             // 사용자 정보와 목표 정보, 미션 정보 동시에 로드
             val userResult = userRepository.refreshUser()
             val goalResult = goalRepository.getGoal()
-            val missionResult = missionRepository.getWeeklyMissions()
+            val missionResult = missionRepository.getActiveWeeklyMission()
 
             // refreshUser 실패 시 Room의 기존 데이터 사용
             val nickname = when (userResult) {

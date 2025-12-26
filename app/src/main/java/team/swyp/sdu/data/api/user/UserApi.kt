@@ -1,10 +1,13 @@
 package team.swyp.sdu.data.api.user
 
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import team.swyp.sdu.data.api.user.TermsAgreementRequest
@@ -65,6 +68,13 @@ interface UserApi {
     suspend fun updateUserProfile(
         @Body body: UpdateUserProfileRequest
     ): Response<Unit>
+
+    @PUT("/users/image")
+    @Multipart
+    suspend fun updateUserProfileImage(
+        @Part image : MultipartBody.Part?
+    ) : Response<Unit>
+
 
     /**
      * 약관 동의

@@ -111,4 +111,10 @@ interface WalkingSessionDao {
      */
     @Query("SELECT COALESCE(SUM(totalDistance), 0.0) FROM walking_sessions")
     fun getTotalDistance(): Flow<Float>
+
+    /**
+     * 총 산책 시간 집계 (Flow로 실시간 업데이트, 밀리초 단위)
+     */
+    @Query("SELECT COALESCE(SUM(endTime - startTime), 0) FROM walking_sessions")
+    fun getTotalDuration(): Flow<Long>
 }

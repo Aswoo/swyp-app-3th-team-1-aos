@@ -19,21 +19,14 @@ fun MyPageRoute(
     onNavigateUserInfoEdit: () -> Unit = {},
     onNavigateGoalManagement: () -> Unit = {},
     onNavigateNotificationSetting: () -> Unit = {},
+    onNavigateMission: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // 거리를 항상 km로 변환 (소수점 첫째 자리까지)
-    val distanceKm = when (val state = uiState) {
-        is MyPageUiState.Success -> String.format("%.1f", state.totalDistanceMeters / 1000f)
-        is MyPageUiState.Error -> String.format("%.1f", 0f)
-        is MyPageUiState.Loading -> "0.0"
-    }
-
     MyPageScreen(
         uiState = uiState,
-        totalDistanceKm = distanceKm,
         onNavigateCharacterEdit = onNavigateCharacterEdit,
         onNavigateUserInfoEdit = onNavigateUserInfoEdit,
         onNavigateGoalManagement = onNavigateGoalManagement,
@@ -43,6 +36,7 @@ fun MyPageRoute(
             loginViewModel.logout()
             onNavigateToLogin()
         },
+        onNavigateMission = onNavigateMission,
         onWithdraw = {
             // TODO: 탈퇴 기능 구현
         },

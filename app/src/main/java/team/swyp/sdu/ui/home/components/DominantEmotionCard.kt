@@ -39,11 +39,12 @@ import team.swyp.sdu.ui.theme.walkItTypography
 @Composable
 fun DominantEmotionCard(
     emotionType: EmotionType?,
+    emotionCnt: String = "4",
     modifier: Modifier = Modifier,
 ) {
     val backgroundColor = getEmotionBackgroundColor(emotionType)
     val textColor = getEmotionTextColor(emotionType)
-    
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -55,7 +56,7 @@ fun DominantEmotionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -80,6 +81,15 @@ fun DominantEmotionCard(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "아직 산책 기록이 없어요!\n남은 일상을 워킷과 함께 보내볼까요?",
+                        style = MaterialTheme.walkItTypography.captionM.copy(
+                            fontWeight = FontWeight.Normal
+                        ),
+                        color = textColor,
+                    )
+                } else {
+                    Text(
+                        text = "${emotionType.name} 감정을 7일 동안 ${emotionCnt}회 경험했어요!\n남은 일상도 워킷과 함께 기쁘게 보내볼까요?",
+                        // caption M/regular
                         style = MaterialTheme.walkItTypography.captionM.copy(
                             fontWeight = FontWeight.Normal
                         ),
@@ -141,7 +151,7 @@ fun EmotionIcon(emotionType: EmotionType?) {
     } else {
         R.drawable.ic_face_default
     }
-    
+
     Image(
         painter = painterResource(id = drawableRes),
         contentDescription = null,

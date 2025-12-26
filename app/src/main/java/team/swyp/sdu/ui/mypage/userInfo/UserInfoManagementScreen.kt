@@ -37,6 +37,7 @@ import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +74,7 @@ import team.swyp.sdu.ui.theme.Grey10
 import team.swyp.sdu.ui.theme.Grey2
 import team.swyp.sdu.ui.theme.Grey3
 import team.swyp.sdu.ui.theme.Grey7
+import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.WalkItTheme
 import team.swyp.sdu.ui.theme.walkItTypography
 
@@ -142,7 +144,7 @@ fun UserInfoManagementScreen(
     val cameraImageUri = remember {
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "camera_image_${System.currentTimeMillis()}.jpg")
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/*")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Camera")
             }
@@ -278,19 +280,19 @@ fun UserInfoManagementScreen(
     
     // 저장 후 뒤로가기 핸들러
     fun handleSaveAndNavigateBack() {
-        viewModel.updateUserProfile(
+        viewModel.saveUserProfile(
             birthYear = birthYear,
             birthMonth = birthMonth,
             birthDay = birthDay,
             nickname = nickname,
-            imageUri = profileImageUrl
         )
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
+            .background(SemanticColor.backgroundWhitePrimary)
             .padding(horizontal = 16.dp)
     ) {
         // 로딩 상태 표시
@@ -731,12 +733,11 @@ fun UserInfoManagementScreen(
                         } else {
                             Modifier
                                 .clickable {
-                                    viewModel.updateUserProfile(
+                                    viewModel.saveUserProfile(
                                         birthYear = birthYear,
                                         birthMonth = birthMonth,
                                         birthDay = birthDay,
                                         nickname = nickname,
-                                        imageUri = profileImageUrl
                                     )
                                 }
                                 .background(greenPrimary, RoundedCornerShape(8.dp))

@@ -549,8 +549,7 @@ private fun PhotoInputArea(
                         .size(24.dp)
                         .offset(x = 12.dp, y = (-12).dp)
                         .background(color = SemanticColor.iconDisabled, shape = CircleShape)
-                        .clickable(onClick = { onPhotoUriChange(null) })
-                        .offset(),
+                        .clickable(onClick = { onPhotoUriChange(null) }),
                     contentAlignment = Alignment.TopEnd,
                 ) {
                     Icon(

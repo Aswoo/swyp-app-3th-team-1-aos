@@ -1,4 +1,4 @@
-package team.swyp.sdu.data.dto.mission
+package team.swyp.sdu.data.remote.mission.dto.mission
 
 import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
@@ -9,9 +9,9 @@ import team.swyp.sdu.domain.model.MissionType
 
 @Keep
 @Serializable
-data class WeeklyMissionData(
+data class WeeklyMissionDto(
     @SerialName("userWeeklyMissionId")
-    val userWeeklyMissionId: Long,
+    val userWeeklyMissionId: Long? = null,
 
     @SerialName("missionId")
     val missionId: Long,
@@ -29,13 +29,13 @@ data class WeeklyMissionData(
     val type: String,
 
     @SerialName("status")
-    val status: String,
+    val status: String? = null,
 
     @SerialName("rewardPoints")
     val rewardPoints: Int,
 
     @SerialName("assignedConfigJson")
-    val assignedConfigJson: String,
+    val assignedConfigJson: String? = null,
 
     @SerialName("weekStart")
     val weekStart: String,
@@ -62,14 +62,15 @@ data class WeeklyMissionData(
     fun getMissionConfig(): MissionConfig? {
         return try {
             val missionType = getMissionType()
-            missionType?.let { MissionConfigParser.parseMissionConfig(it, assignedConfigJson) }
+            val configJson = assignedConfigJson ?: return null // null이면 바로 null
+            missionType?.let { MissionConfigParser.parseMissionConfig(it, configJson) }
         } catch (e: Exception) {
             null // 파싱 실패 시 null 반환
         }
     }
 
-    companion object {
-        val EMPTY = WeeklyMissionData(
+    companion object Companion {
+        val EMPTY = WeeklyMissionDto(
             userWeeklyMissionId = 0L,
             missionId = 0L,
             title = "",

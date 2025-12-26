@@ -3,16 +3,29 @@ package team.swyp.sdu.ui.mypage.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import team.swyp.sdu.R
 import team.swyp.sdu.data.remote.walking.dto.Grade
 import team.swyp.sdu.ui.components.GradeBadge
 import team.swyp.sdu.ui.theme.Grey10
 import team.swyp.sdu.ui.theme.Grey7
+import team.swyp.sdu.ui.theme.WalkItTheme
 import team.swyp.sdu.ui.theme.walkItTypography
 
 /**
@@ -23,10 +36,17 @@ import team.swyp.sdu.ui.theme.walkItTypography
 @Composable
 fun MyPageUserInfo(
     nickname: String,
+    profileImageUrl: String? = null,
     grade: Grade?,
     modifier: Modifier = Modifier,
 ) {
-    Column {
+
+    val context = LocalContext.current
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Row(modifier = modifier) {
             Text(
                 text = nickname,
@@ -44,10 +64,34 @@ fun MyPageUserInfo(
                 GradeBadge(grade = grade)
             }
         }
+        Spacer(Modifier.height(32.dp))
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(profileImageUrl)
+                    .crossfade(true)
+                    .placeholder(R.drawable.ic_default_user)
+                    .build(),
+                contentDescription = "프로필 이미지",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(150.dp)
+            )
+        }
+
+
     }
 }
 
 
+@Preview
+@Preview(showBackground = true)
+@Composable
+fun MyPageUserInfoPreview(modifier: Modifier = Modifier) {
+    WalkItTheme {
+        MyPageUserInfo(nickname = "ddfdfd", profileImageUrl = "asdfasdf", grade = Grade.TREE)
+    }
+}
 
 
 

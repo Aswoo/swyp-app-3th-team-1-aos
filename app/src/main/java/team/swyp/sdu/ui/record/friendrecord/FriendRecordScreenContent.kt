@@ -10,13 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,7 +50,6 @@ import team.swyp.sdu.ui.components.formatStepCount
 import team.swyp.sdu.ui.home.components.WalkProgressBar
 import team.swyp.sdu.ui.record.friendrecord.component.FriendRecordMoreMenu
 import team.swyp.sdu.ui.record.friendrecord.component.LikeButton
-import team.swyp.sdu.ui.record.friendrecord.LikeUiState
 import team.swyp.sdu.ui.theme.Grey7
 import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.WalkItTheme
@@ -68,9 +64,10 @@ import team.swyp.sdu.ui.theme.walkItTypography
  * @param onNavigateBack 뒤로가기 콜백
  */
 @Composable
-fun FriendRecordRoute(
+fun FriendRecordScreen(
     nickname: String,
     onNavigateBack: () -> Unit,
+    onBlockUser: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FriendRecordViewModel = hiltViewModel(),
 ) {
@@ -80,13 +77,12 @@ fun FriendRecordRoute(
     LaunchedEffect(nickname) {
         viewModel.loadFollowerWalkRecord(nickname)
     }
-
-    FriendRecordScreen(
+    FriendRecordScreenContent(
         uiState = uiState,
+        onBlockUser = onBlockUser,
         onLikeClick = viewModel::toggleLike,
         modifier = modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.navigationBars),
+            .fillMaxSize(),
     )
 }
 
@@ -99,9 +95,10 @@ fun FriendRecordRoute(
  * @param onLikeClick 좋아요 클릭 콜백
  */
 @Composable
-fun FriendRecordScreen(
+fun FriendRecordScreenContent(
     uiState: FriendRecordUiState,
     modifier: Modifier = Modifier,
+    onBlockUser: (String) -> Unit = {},
     onLikeClick: () -> Unit = {},
 ) {
     when (val state = uiState) {
@@ -119,6 +116,7 @@ fun FriendRecordScreen(
                 data = state.data,
                 likeState = state.like,
                 onLikeClick = onLikeClick,
+                onBlockUser = onBlockUser,
                 modifier = modifier,
             )
         }
@@ -156,6 +154,7 @@ private fun FriendRecordContent(
     data: FollowerWalkRecord,
     likeState: LikeUiState,
     onLikeClick: () -> Unit,
+    onBlockUser: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -164,7 +163,8 @@ private fun FriendRecordContent(
         // 캐릭터 정보
         CharacterInfoSection(
             character = data.character,
-            walkProgressPercentage = data.walkProgressPercentage ?: "0"
+            walkProgressPercentage = data.walkProgressPercentage ?: "0",
+            onBlockUser = onBlockUser
         )
         Spacer(Modifier.height(16.dp))
 
@@ -205,7 +205,7 @@ private fun CharacterInfoSection(
     character: Character,
     walkProgressPercentage: String = "",
     onClickMore: () -> Unit = {},
-    onDeleteClick: () -> Unit = {},
+    onBlockUser: (String) -> Unit = {},
 ) {
     var showMenu by remember { mutableStateOf(false) }
     Box(
@@ -246,7 +246,7 @@ private fun CharacterInfoSection(
                     Spacer(Modifier.width(8.dp))
 
                     Text(
-                        text = "닉네임",
+                        text = character.nickName,
                         // heading M/semibold
                         style = MaterialTheme.walkItTypography.headingM.copy(
                             fontWeight = FontWeight.SemiBold
@@ -269,7 +269,7 @@ private fun CharacterInfoSection(
                         onDismiss = { showMenu = false },
                         onDeleteClick = {
                             showMenu = false
-                            onDeleteClick()
+                            onBlockUser(character.nickName)
                         },
                     )
                 }
@@ -343,7 +343,7 @@ private fun CharacterInfoSection(
 @Composable
 private fun FriendRecordScreenPreview() {
     WalkItTheme {
-        FriendRecordScreen(
+        FriendRecordScreenContent(
             modifier = Modifier.background(Grey7),
             uiState = FriendRecordUiState.Success(
                 data = FollowerWalkRecord(
@@ -357,8 +357,8 @@ private fun FriendRecordScreenPreview() {
                     stepCount = 8500,
                     totalDistance = 6500,
                     createdDate = "2024-01-15",
+                    walkId = 0L
                 ),
-                walkId = 1L,
                 like = LikeUiState(count = 5, isLiked = false),
             ),
         )
@@ -369,7 +369,7 @@ private fun FriendRecordScreenPreview() {
 @Composable
 private fun FriendRecordScreenLikedPreview() {
     WalkItTheme {
-        FriendRecordScreen(
+        FriendRecordScreenContent(
             modifier = Modifier.background(Grey7),
             uiState = FriendRecordUiState.Success(
                 data = FollowerWalkRecord(
@@ -383,8 +383,8 @@ private fun FriendRecordScreenLikedPreview() {
                     stepCount = 8500,
                     totalDistance = 6500,
                     createdDate = "2024-01-15",
+                    walkId = 0L
                 ),
-                walkId = 1L,
                 like = LikeUiState(count = 12, isLiked = true),
             ),
         )
@@ -395,7 +395,7 @@ private fun FriendRecordScreenLikedPreview() {
 @Composable
 private fun FriendRecordScreenLoadingPreview() {
     WalkItTheme {
-        FriendRecordScreen(
+        FriendRecordScreenContent(
             uiState = FriendRecordUiState.Loading,
         )
     }
@@ -405,7 +405,7 @@ private fun FriendRecordScreenLoadingPreview() {
 @Composable
 private fun FriendRecordScreenErrorPreview() {
     WalkItTheme {
-        FriendRecordScreen(
+        FriendRecordScreenContent(
             uiState = FriendRecordUiState.Error(
                 message = "데이터를 불러오는 중 오류가 발생했습니다",
             ),

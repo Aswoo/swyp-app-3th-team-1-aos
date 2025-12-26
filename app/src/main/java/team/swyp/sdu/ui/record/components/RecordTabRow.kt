@@ -1,9 +1,11 @@
 package team.swyp.sdu.ui.record.components
 
+import android.view.RoundedCorner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -12,7 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import team.swyp.sdu.ui.theme.SemanticColor
+import team.swyp.sdu.ui.theme.walkItTypography
 
 /**
  * 기록 탭 타입
@@ -35,11 +40,10 @@ fun RecordTabRow(
 
     TabRow(
         selectedTabIndex = selectedTabIndex,
-        containerColor = Color(0xFFE7E7E7),
+        containerColor = Color.Transparent,
         modifier = modifier
-            .clip(shape = MaterialTheme.shapes.large)
             .fillMaxWidth()
-            .height(52.dp),
+            .height(57.dp),
         divider = {},
         indicator = {},
     ) {
@@ -50,10 +54,10 @@ fun RecordTabRow(
                 onClick = { onTabSelected(index) },
                 modifier =
                     Modifier
-                        .padding(horizontal = 6.dp, vertical = 8.dp)
-                        .clip(MaterialTheme.shapes.medium)
+                        .padding(10.dp)
+                        .clip(shape = RoundedCornerShape(8.dp))
                         .background(
-                            if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            if (selected) SemanticColor.stateAquaBluePrimary else Color.Transparent,
                         ),
                 text = {
                     Text(
@@ -63,8 +67,12 @@ fun RecordTabRow(
                                 RecordTabType.Week -> "주간"
                             },
                         color =
-                            if (selected) Color.White
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (selected) SemanticColor.textBorderPrimaryInverse
+                            else SemanticColor.textBorderSecondary,
+
+                        style = MaterialTheme.walkItTypography.bodyS.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
                     )
                 },
                 selectedContentColor = Color.White,

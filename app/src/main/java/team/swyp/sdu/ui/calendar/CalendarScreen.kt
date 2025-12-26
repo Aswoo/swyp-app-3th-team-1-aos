@@ -94,7 +94,6 @@ fun CalendarScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(navigationBarsPadding)
             .verticalScroll(rememberScrollState()),
     ) {
         CalendarHeader(

@@ -11,14 +11,19 @@ import team.swyp.sdu.data.local.dao.PurchasedItemDao
 import team.swyp.sdu.data.local.dao.UserDao
 import team.swyp.sdu.data.local.dao.WalkingSessionDao
 import team.swyp.sdu.data.local.database.AppDatabase
-import team.swyp.sdu.data.remote.walking.WalkRemoteDataSource
 import team.swyp.sdu.data.repository.CharacterRepositoryImpl
 import team.swyp.sdu.data.repository.CosmeticItemRepositoryImpl
+import team.swyp.sdu.data.repository.FriendRepositoryImpl
 import team.swyp.sdu.data.repository.MissionProgressRepositoryImpl
+import team.swyp.sdu.data.repository.WalkRepositoryImpl
 import team.swyp.sdu.data.repository.WalkingSessionRepository
+import team.swyp.sdu.data.remote.friend.FollowRemoteDataSource
+import team.swyp.sdu.data.remote.walking.WalkRemoteDataSource
 import team.swyp.sdu.domain.repository.CharacterRepository
 import team.swyp.sdu.domain.repository.CosmeticItemRepository
+import team.swyp.sdu.domain.repository.FriendRepository
 import team.swyp.sdu.domain.repository.MissionProgressRepository
+import team.swyp.sdu.domain.repository.WalkRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -108,4 +113,16 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideNotificationSettingsDao(database: AppDatabase): NotificationSettingsDao = database.notificationSettingsDao()
+
+    @Provides
+    @Singleton
+    fun provideFriendRepository(
+        followRemoteDataSource: FollowRemoteDataSource,
+    ): FriendRepository = FriendRepositoryImpl(followRemoteDataSource)
+
+    @Provides
+    @Singleton
+    fun provideWalkRepository(
+        walkRemoteDataSource: WalkRemoteDataSource,
+    ): WalkRepository = WalkRepositoryImpl(walkRemoteDataSource)
 }

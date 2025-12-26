@@ -146,3 +146,4 @@ fun findSelectedEmotionIndex(
     } ?: 2 // 기본값: CONTENT (인덱스 2)
 }
 
+

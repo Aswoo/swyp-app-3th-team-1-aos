@@ -1,8 +1,10 @@
 package team.swyp.sdu.ui.mypage.userInfo
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,15 +35,18 @@ class UserInfoManagementViewModel @Inject constructor(
     // 사용자 정보 입력 상태
     private val _userInput = MutableStateFlow(UserInput())
     val userInput: StateFlow<UserInput> = _userInput.asStateFlow()
-    
+
     // Goal 상태
     val goalFlow: StateFlow<Goal?> = goalRepository.goalFlow
+
+    val _uploadedImageUri = MutableStateFlow(Uri.EMPTY)
+    val uploadedImageUri: StateFlow<Uri> = _uploadedImageUri.asStateFlow()
 
     init {
         loadUserInfo()
         loadGoal()
     }
-    
+
     /**
      * Goal 조회
      */
@@ -84,20 +89,29 @@ class UserInfoManagementViewModel @Inject constructor(
     }
 
     /**
-     * 사용자 정보 업데이트
+     * 사용자 입력 상태 업데이트
      */
-    fun updateUserProfile(
+    fun updateUserInput(input: UserInput) {
+        _userInput.value = input
+    }
+
+    /**
+     * _uploadedImageUri를 사용하여 프로필 저장/업데이트
+     *
+     * - _uploadedImageUri가 Uri.EMPTY이면 이미지 없이 프로필만 저장
+     * - _uploadedImageUri가 Uri.EMPTY가 아니면 이미지 업데이트 포함
+     */
+    fun saveUserProfile(
         birthYear: String,
         birthMonth: String,
         birthDay: String,
         nickname: String,
-        imageUri: String? = null,
     ) {
         viewModelScope.launch {
             _uiState.value = UserInfoUiState.Updating
 
             try {
-                // 생년월일 포맷팅 (ISO 8601 형식)
+                // 생년월일 포맷팅
                 val birthDate =
                     if (birthYear.isNotBlank() && birthMonth.isNotBlank() && birthDay.isNotBlank()) {
                         String.format(
@@ -106,72 +120,78 @@ class UserInfoManagementViewModel @Inject constructor(
                             birthMonth.toIntOrNull() ?: 1,
                             birthDay.toIntOrNull() ?: 1
                         )
-                    } else {
-                        ""
-                    }
+                    } else ""
 
                 // 입력값 검증
-
                 if (nickname.isBlank()) {
                     _uiState.value = UserInfoUiState.Error("닉네임을 입력해주세요")
                     return@launch
                 }
-
                 if (birthDate.isBlank()) {
                     _uiState.value = UserInfoUiState.Error("생년월일을 선택해주세요")
                     return@launch
                 }
 
-//                // 현재 사용자 정보 가져오기
-//                val currentUser = when (val currentState = _uiState.value) {
-//                    is UserInfoUiState.Success -> currentState.user
-//                    else -> {
-//                        _uiState.value = UserInfoUiState.Error("사용자 정보를 불러올 수 없습니다")
-//                        return@launch
-//                    }
-//                }
+                val currentImageUri = _uploadedImageUri.value
 
-                // 프로필 업데이트 API 호출
-                when (val result = userRepository.updateUserProfile(
-                    nickname = nickname,
-                    birthDate = birthDate,
-                    imageUri = imageUri,
-                )) {
-                    is Result.Success -> {
-                        val updatedUser = result.data
-                        Timber.d("사용자 프로필 업데이트 성공: ${updatedUser.nickname}")
-                        // userInput도 업데이트
+                // _uploadedImageUri가 Uri.EMPTY인지 확인
+                val hasImage = currentImageUri != Uri.EMPTY
+
+                // 1️⃣ 병렬 실행
+                val imageDeferred = async {
+                    if (hasImage) {
+                        // 이미지가 있으면 업데이트
+                        userRepository.updateUserProfileImage(currentImageUri)
+                    } else {
+                        // 이미지가 없으면 성공 처리 (이미지 없이 저장)
+                        Result.Success(Unit)
+                    }
+                }
+
+                val profileDeferred = async {
+                    userRepository.updateUserProfile(
+                        nickname = nickname,
+                        birthDate = birthDate
+                    )
+                }
+
+                val imageResult = imageDeferred.await()
+                val profileResult = profileDeferred.await()
+
+                // 2️⃣ 결과 합산
+                when {
+                    imageResult is Result.Error -> {
+                        _uiState.value =
+                            UserInfoUiState.Error(imageResult.message ?: "이미지 업데이트 실패")
+                        return@launch
+                    }
+
+                    profileResult is Result.Error -> {
+                        _uiState.value =
+                            UserInfoUiState.Error(profileResult.message ?: "프로필 업데이트 실패")
+                        return@launch
+                    }
+
+                    imageResult is Result.Success && profileResult is Result.Success -> {
+                        val updatedUser = profileResult.data
                         _userInput.value = UserInput(
                             nickname = updatedUser.nickname ?: "",
                             birthDate = updatedUser.birthDate ?: "",
                             sex = updatedUser.sex ?: Sex.MALE,
-                            imageName = updatedUser.imageName,
+                            imageName = updatedUser.imageName
                         )
-                        _uiState.value = Success(updatedUser)
+                        // 성공 시 _uploadedImageUri 초기화
+                        _uploadedImageUri.value = Uri.EMPTY
+                        _uiState.value = UserInfoUiState.Success(updatedUser)
+                        Timber.d("프로필 저장 완료: nickname=$nickname, hasImage=$hasImage")
                     }
-
-                    is Result.Error -> {
-                        Timber.e(result.exception, "사용자 프로필 업데이트 실패")
-                        _uiState.value = Error(result.message ?: "프로필 업데이트에 실패했습니다")
-                    }
-
-                    is Result.Loading -> {
-
-                    }
-
                 }
+
             } catch (e: Exception) {
-                Timber.e(e, "프로필 업데이트 중 예외 발생")
-                _uiState.value = UserInfoUiState.Error("프로필 업데이트에 실패했습니다")
+                Timber.e(e, "프로필 저장 중 예외 발생")
+                _uiState.value = UserInfoUiState.Error("프로필 저장에 실패했습니다")
             }
         }
-    }
-
-    /**
-     * 사용자 입력 상태 업데이트
-     */
-    fun updateUserInput(input: UserInput) {
-        _userInput.value = input
     }
 }
 

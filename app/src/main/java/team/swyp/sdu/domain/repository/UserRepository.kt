@@ -1,5 +1,6 @@
 package team.swyp.sdu.domain.repository
 
+import android.net.Uri
 import kotlinx.coroutines.flow.StateFlow
 import team.swyp.sdu.core.Result
 import team.swyp.sdu.domain.model.Sex
@@ -26,8 +27,11 @@ interface UserRepository {
     suspend fun updateUserProfile(
         nickname: String,
         birthDate: String,
-        imageUri: String? = null,
     ): Result<User>
+
+    suspend fun updateUserProfileImage(
+        imageUri: Uri,
+    ): Result<Unit>
 
     suspend fun agreeToTerms(
         termsAgreed: Boolean,

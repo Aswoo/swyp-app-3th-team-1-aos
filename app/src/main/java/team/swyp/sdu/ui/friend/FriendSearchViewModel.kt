@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import team.swyp.sdu.core.Result
-import team.swyp.sdu.data.remote.walking.WalkRemoteDataSource
 import team.swyp.sdu.data.remote.walking.mapper.FollowerWalkRecordMapper
 import team.swyp.sdu.domain.model.FollowerWalkRecord
+import team.swyp.sdu.domain.repository.WalkRepository
 import javax.inject.Inject
 
 /**
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class FriendSearchViewModel
     @Inject
     constructor(
-        private val walkRemoteDataSource: WalkRemoteDataSource,
+        private val walkRepository: WalkRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<FriendSearchUiState>(FriendSearchUiState.Loading)
         val uiState: StateFlow<FriendSearchUiState> = _uiState.asStateFlow()
@@ -35,19 +35,14 @@ class FriendSearchViewModel
          * @param lon 경도 (선택사항)
          */
         fun loadFollowerWalkRecord(
-            nickname: String? = null,
+            nickname: String,
             lat: Double? = null,
             lon: Double? = null,
         ) {
             viewModelScope.launch {
                 _uiState.value = FriendSearchUiState.Loading
-                
                 withContext(Dispatchers.IO) {
-                    val result = if (nickname != null) {
-                        walkRemoteDataSource.getFollowerWalkRecord(nickname, lat, lon)
-                    } else {
-                        walkRemoteDataSource.getMyRecentWalkRecord(lat, lon)
-                    }
+                    val result = walkRepository.getFollowerWalkRecord(nickname, lat, lon)
                     
                     _uiState.value = when (result) {
                         is Result.Success -> {
@@ -61,4 +56,5 @@ class FriendSearchViewModel
             }
         }
     }
+
 

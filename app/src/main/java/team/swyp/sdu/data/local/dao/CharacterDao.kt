@@ -28,3 +28,4 @@ interface CharacterDao {
     suspend fun clear()
 }
 
+

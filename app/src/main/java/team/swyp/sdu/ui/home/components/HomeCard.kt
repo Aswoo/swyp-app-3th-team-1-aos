@@ -1,29 +1,27 @@
 package team.swyp.sdu.ui.home.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,144 +32,24 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import java.io.File
 import team.swyp.sdu.R
 import team.swyp.sdu.data.model.EmotionType
 import team.swyp.sdu.data.model.EmotionType.*
 import team.swyp.sdu.data.model.LocationPoint
 import team.swyp.sdu.data.model.WalkingSession
-import team.swyp.sdu.ui.home.components.HomeMission
-import team.swyp.sdu.ui.home.components.clickableNoRipple
-
-@Composable
-fun CharacterSection(
-    onClickWalk: () -> Unit,
-    todaySteps: Int,
-) {
-    // 닉네임/레벨 위젯과 캐릭터, 오늘 걸음 수/버튼 묶음
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(260.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.walk_it_character),
-            contentDescription = "산책 캐릭터",
-            modifier = Modifier.size(220.dp),
-        )
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column {
-            Text(
-                text = "오늘 걸음 수",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "%,d".format(todaySteps),
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.ExtraBold,
-            )
-        }
-    }
-}
-
-@Composable
-fun GoalCard(
-    title: String,
-    progress: Float,
-    onClickGoal: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF2F2F2)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "현재 목표",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Text(
-                    text = "목표 설정",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickableNoRipple(onClickGoal),
-                )
-            }
-
-            BoxWithConstraints(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(32.dp),
-            ) {
-                val clamped = progress.coerceIn(0f, 1f)
-                val markerOffset = maxWidth * clamped
-
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterStart)
-                            .fillMaxWidth()
-                            .height(10.dp)
-                            .background(Color(0xFF9E9E9E), shape = CircleShape),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterStart)
-                            .width(maxWidth * clamped)
-                            .height(10.dp)
-                            .background(Color(0xFFB71C1C), shape = CircleShape),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterStart)
-                            .offset(x = markerOffset - 9.dp)
-                            .size(18.dp)
-                            .background(Color(0xFF000000), shape = CircleShape),
-                )
-            }
-        }
-    }
-}
-
+import team.swyp.sdu.ui.theme.SemanticColor
+import team.swyp.sdu.ui.theme.WalkItTheme
+import team.swyp.sdu.ui.theme.walkItTypography
+import java.io.File
 
 @Composable
 fun WeeklyRecordCard(
@@ -179,10 +57,10 @@ fun WeeklyRecordCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F4F4)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        modifier = modifier.width(230.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SemanticColor.backgroundWhitePrimary),
+        border = BorderStroke(width = 1.dp, color = SemanticColor.backgroundWhiteQuaternary)
     ) {
         Column {
             Box(
@@ -190,12 +68,14 @@ fun WeeklyRecordCard(
                     Modifier
                         .fillMaxWidth()
                         .height(190.dp)
-                        .background(Color(0xFFE6E6E6), shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)),
+                        .background(
+                            Color(0xFFE6E6E6),
+                            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+                        ),
                 contentAlignment = Alignment.BottomStart,
             ) {
                 // 이미지 URI 가져오기 (localImage -> serverImage 순서)
                 val imageUri = session.getImageUri()
-                
                 if (imageUri != null) {
                     // 이미지가 있으면 이미지 표시
                     AsyncImage(
@@ -231,43 +111,81 @@ fun WeeklyRecordCard(
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(16.dp),
+                            .offset(x = 8.dp,y = 42.dp),
                 ) {
                     EmotionCircle(emotionType = session.postWalkEmotion)
                 }
             }
-
-            Text(
-                text = formatDate(session.startTime),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 12.dp),
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                 Text(
-                    text = formatDuration(session.duration),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    text = formatDate(session.startTime),
+                    // caption M/medium
+                    style = MaterialTheme.walkItTypography.captionM.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = SemanticColor.textBorderSecondary,
                 )
-                Text("|", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text = "%,d".format(session.stepCount),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text("|", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text = formatDistance(session.totalDistance),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start),
+                ) {
+                    // 걸음 수 (AnnotatedString)
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = buildAnnotatedString {
+                                append("%,d".format(session.stepCount))
+                                withStyle(
+                                    SpanStyle(
+                                        fontSize = MaterialTheme.walkItTypography.bodyS.fontSize,
+                                        fontWeight = FontWeight.Normal,
+                                        color = SemanticColor.textBorderPrimary
+                                    )
+                                ) {
+                                    append(" 걸음")
+                                }
+                            },
+                            style = MaterialTheme.walkItTypography.bodyXL,
+                            color = SemanticColor.textBorderPrimary,
+                        )
+                    }
+                    VerticalDivider(
+                        thickness = 1.dp,
+                        modifier = Modifier.height(18.dp),
+                        color = SemanticColor.textBorderPrimary
+                    )
+
+                    // 거리 (AnnotatedString)
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        val (number, unit) = formatDistance(session.totalDistance)
+
+                        Text(
+                            text = buildAnnotatedString {
+                                append(number)
+                                withStyle(
+                                    SpanStyle(
+                                        fontSize = MaterialTheme.walkItTypography.bodyS.fontSize,
+                                        fontWeight = FontWeight.Normal,
+                                        color = SemanticColor.textBorderPrimary
+                                    )
+                                ) {
+                                    append(" $unit")
+                                }
+                            },
+                            style = MaterialTheme.walkItTypography.bodyXL.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                        )
+                    }
+                }
             }
         }
     }
@@ -277,7 +195,7 @@ fun WeeklyRecordCard(
 fun EmotionCircle(emotionType: EmotionType) {
 
 
-    val drawable = when(emotionType){
+    val drawable = when (emotionType) {
         HAPPY -> R.drawable.ic_circle_happy
         JOYFUL -> R.drawable.ic_circle_joyful
         CONTENT -> R.drawable.ic_circle_content
@@ -360,10 +278,80 @@ private fun formatDuration(durationMillis: Long): String {
     return String.format("%02d:%02d", minutes, remainingSeconds)
 }
 
-private fun formatDistance(meters: Float): String =
+private fun formatDistance(meters: Float): Pair<String, String> =
     if (meters >= 1000f) {
-        String.format("%.2f km", meters / 1000f)
+        Pair(
+            String.format("%.2f", meters / 1000f),
+            "km"
+        )
     } else {
-        String.format("%.0f m", meters)
+        Pair(
+            String.format("%.0f", meters),
+            "m"
+        )
     }
 
+
+@Preview(name = "WeeklyRecordCard Preview - With Image")
+@Composable
+fun WeeklyRecordCardPreview() {
+    // 더미 데이터 생성
+    val dummySessionWithoutImage = WalkingSession(
+        id = "session456",
+        startTime = System.currentTimeMillis() - 172800000, // 그저께
+        endTime = System.currentTimeMillis(),
+        stepCount = 3100,
+        totalDistance = 2500f,
+        locations = listOf(
+            LocationPoint(37.5665, 126.9780), // 서울 시청
+            LocationPoint(37.5660, 126.9785),
+            LocationPoint(37.5665, 126.9790),
+            LocationPoint(37.5670, 126.9785)
+        ),
+        preWalkEmotion = EmotionType.HAPPY,
+        postWalkEmotion = EmotionType.CONTENT,
+        localImagePath = null,
+        serverImageUrl = "https://picsum.photos/seed/picsum/400/300", // 이미지가 없는 상태
+        createdDate = "2015-12-29",
+        note = "짧은 산책",
+    )
+
+    WalkItTheme {
+        WeeklyRecordCard(
+            session = dummySessionWithoutImage,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Preview(name = "WeeklyRecordCard Preview - No Image (Path Thumbnail)")
+@Composable
+fun WeeklyRecordCardPathPreview() {
+    // 이미지가 없는 더미 데이터 생성
+    val dummySessionWithoutImage = WalkingSession(
+        id = "session456",
+        startTime = System.currentTimeMillis() - 172800000, // 그저께
+        endTime = System.currentTimeMillis(),
+        stepCount = 3100,
+        totalDistance = 2500f,
+        locations = listOf(
+            LocationPoint(37.5665, 126.9780), // 서울 시청
+            LocationPoint(37.5660, 126.9785),
+            LocationPoint(37.5665, 126.9790),
+            LocationPoint(37.5670, 126.9785)
+        ),
+        preWalkEmotion = EmotionType.HAPPY,
+        postWalkEmotion = EmotionType.CONTENT,
+        localImagePath = null,
+        serverImageUrl = null, // 이미지가 없는 상태
+        createdDate = "2015-12-29",
+        note = "짧은 산책",
+    )
+
+    WalkItTheme {
+        WeeklyRecordCard(
+            session = dummySessionWithoutImage,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}

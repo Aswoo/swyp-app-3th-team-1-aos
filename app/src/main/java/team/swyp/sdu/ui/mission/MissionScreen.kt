@@ -1,5 +1,6 @@
 package team.swyp.sdu.ui.mission
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,23 +28,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import team.swyp.sdu.R
 import team.swyp.sdu.domain.model.MissionCategory
-import team.swyp.sdu.presentation.viewmodel.MissionUiState
-import team.swyp.sdu.presentation.viewmodel.MissionViewModel
 import team.swyp.sdu.ui.components.AppHeader
 import team.swyp.sdu.ui.mission.component.CategoryChip
 import team.swyp.sdu.ui.mission.component.MissionCard
 import team.swyp.sdu.ui.mission.component.PopularMissionCard
+import team.swyp.sdu.ui.mission.model.MissionCardState
+import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.WalkItTheme
 
 
 @Composable
 fun MissionRoute(
+    onNavigateToWalk: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onNavigateToMissionDetail: (String) -> Unit = {},
 ) {
@@ -52,7 +58,7 @@ fun MissionRoute(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
         onMissionClick = { missionId ->
-            onNavigateToMissionDetail(missionId)
+//            onNavigateToMissionDetail(missionId)
         },
     )
 }
@@ -61,7 +67,7 @@ fun MissionRoute(
 fun MissionScreen(
     uiState: MissionUiState,
     onNavigateBack: () -> Unit,
-    onMissionClick: (String) -> Unit,
+    onMissionClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedCategory by remember { mutableStateOf<MissionCategory?>(null) }
@@ -69,25 +75,32 @@ fun MissionScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .systemBarsPadding()
+            .background(SemanticColor.backgroundWhitePrimary)
     ) {
+
         // 헤더
         AppHeader(
             title = "미션",
             onNavigateBack = onNavigateBack,
         )
 
+        // 프로모션 or 내부 서비스 광고 예정
+        Image(
+            painter = painterResource(R.drawable.bg_mission_banner),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(84.dp),
+            contentDescription = "banner"
+        )
+
+
         // 메인 콘텐츠
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            // 이번 주 인기 미션 섹션
-            item {
-                PopularMissionCard()
-            }
-
             // 카테고리별 미션 섹션
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -101,19 +114,6 @@ fun MissionScreen(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFFE0E0E0))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .clickable { /* TODO: 필터 다이얼로그 */ },
-                        ) {
-                            Text(
-                                text = "필터",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Black,
-                            )
-                        }
                     }
 
                     // 필터 칩
@@ -124,18 +124,27 @@ fun MissionScreen(
                             CategoryChip(
                                 category = category,
                                 isSelected = selectedCategory == category,
-                                onClick = { selectedCategory = if (selectedCategory == category) null else category },
+                                onClick = {
+                                    selectedCategory =
+                                        if (selectedCategory == category) null else category
+                                },
                             )
                         }
                     }
                 }
             }
 
+            item {
+                Spacer(Modifier.height(24.dp))
+            }
+
             // 미션 리스트
-            items(uiState.weeklyMissions) { mission ->
+            items(uiState.weeklyMissions) { missionCard ->
                 MissionCard(
-                    mission = mission,
-                    onClick = { onMissionClick(mission.userWeeklyMissionId.toString()) },
+                    cardState = missionCard.cardState,
+                    mission = missionCard.mission,
+                    onChallengeClick = { },
+                    onRewardClick = { missionId -> onMissionClick(missionId) }
                 )
             }
 
@@ -146,7 +155,7 @@ fun MissionScreen(
 
 @Composable
 @Preview
-fun MissionPreview(){
+fun MissionPreview() {
     WalkItTheme {
         MissionScreen(
             uiState = MissionUiState(),

@@ -4,34 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import team.swyp.sdu.core.Result
 import team.swyp.sdu.core.onError
 import team.swyp.sdu.domain.model.Goal
 import team.swyp.sdu.domain.repository.GoalRepository
-import team.swyp.sdu.domain.repository.UserRepository
+import team.swyp.sdu.ui.mypage.goal.model.GoalState
 import timber.log.Timber
-import java.util.Calendar
 import javax.inject.Inject
 
-/**
- * 목표 관리 화면의 상태
- */
-data class GoalState(
-    val targetSteps: Int = 10000,
-    val startDate: Long = System.currentTimeMillis(),
-    val endDate: Long = Calendar.getInstance().apply {
-        add(Calendar.DAY_OF_MONTH, 7)
-    }.timeInMillis,
-    val walkFrequency: Int = 3,
-    val missionSuccessCount: Int = 0,
-)
+
 
 /**
  * 목표 관리 ViewModel
@@ -39,101 +24,55 @@ data class GoalState(
 @HiltViewModel
 class GoalManagementViewModel @Inject constructor(
     private val goalRepository: GoalRepository,
-    private val userRepository: UserRepository,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        GoalState(
-            targetSteps = 10000,
-            startDate = System.currentTimeMillis(),
-            endDate = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_MONTH, 7)
-            }.timeInMillis,
-            walkFrequency = 3,
-            missionSuccessCount = 0,
-        ),
-    )
+
+    // UI 상태
+    private val _uiState = MutableStateFlow(GoalState())
     val uiState: StateFlow<GoalState> = _uiState.asStateFlow()
 
-    private val currentUserId = MutableStateFlow<Long?>(null)
-
-    private val serverGoalState: StateFlow<Result<Goal>> =
-        goalRepository.goalFlow
-            .map { goal ->
-                goal?.let { Result.Success(it) } ?: Result.Loading
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = Result.Loading,
-            )
-
     init {
-        // 목표 정보 로드 (화면 진입 시)
-        refreshGoal()
-
-        // 캐시된 데이터로 로컬 상태 초기화 (빠른 로딩)
+        // 서버 캐시 구독
         viewModelScope.launch {
-            serverGoalState.collectLatest { result ->
-                when (result) {
-                    is Result.Success -> {
-                        val goal = result.data
-                        // 캐시된 데이터로 로컬 상태 업데이트
-                        _uiState.value = _uiState.value.copy(
-                            targetSteps = goal.targetStepCount,
-                            walkFrequency = goal.targetWalkCount,
-                        )
-                    }
-                    is Result.Error -> {
-                        // 에러 발생 시 기본값 유지
-                    }
-                    Result.Loading -> {
-                        // 로딩 중에는 현재 상태 유지
-                    }
+            goalRepository.goalFlow.collectLatest { cachedGoal ->
+                if (cachedGoal != null) {
+                    // 캐시가 있으면 UI에 바로 반영
+                    _uiState.value = _uiState.value.copy(
+                        targetSteps = cachedGoal.targetStepCount,
+                        walkFrequency = cachedGoal.targetWalkCount
+                    )
+                } else {
+                    // 캐시가 없으면 서버에서 새로 가져오기
+                    refreshGoal()
                 }
             }
-        }
-    }
-
-    fun refreshGoal() {
-        viewModelScope.launch {
-            goalRepository.refreshGoal()
-                .onError { throwable, message ->
-                    Timber.e(throwable, "목표 갱신 실패: $message")
-                }
         }
     }
 
     /**
-     * 목표 업데이트
+     * 서버에서 최신 목표 정보 가져오기
      */
-    fun updateGoal(
-        targetSteps: Int,
-        startDate: Long,
-        endDate: Long,
-        walkFrequency: Int,
-        missionSuccessCount: Int,
-    ) {
+    fun refreshGoal() {
         viewModelScope.launch {
-            // 로컬 상태 업데이트
-            _uiState.value = GoalState(
-                targetSteps = targetSteps,
-                startDate = startDate,
-                endDate = endDate,
-                walkFrequency = walkFrequency,
-                missionSuccessCount = missionSuccessCount,
-            )
+            goalRepository.refreshGoal().onError { t, msg ->
+                Timber.e(t, "목표 갱신 실패: $msg")
+            }
+        }
+    }
 
-            // 서버에 저장
-            val targetUserId = currentUserId.value
-            if (targetUserId != null) {
-                val goal = Goal(
-                    targetStepCount = targetSteps,
-                    targetWalkCount = walkFrequency,
-                )
-                goalRepository.updateGoal(goal)
-                    .onError { throwable, message ->
-                        Timber.e(throwable, "목표 업데이트 실패: $message")
-                    }
+    /**
+     * 목표 업데이트 (Optimistic Update + 서버 반영)
+     */
+    fun updateGoal(targetSteps: Int, walkFrequency: Int) {
+        viewModelScope.launch {
+            // 1. UI 상태 바로 업데이트 (Optimistic)
+            _uiState.value = GoalState(targetSteps, walkFrequency)
+
+            // 2. 서버 업데이트
+            val goal = Goal(targetStepCount = targetSteps, targetWalkCount = walkFrequency)
+            goalRepository.updateGoal(goal).onError { t, msg ->
+                Timber.e(t, "목표 업데이트 실패: $msg")
+                // 실패 시 서버에서 다시 가져와 UI 동기화
+                refreshGoal()
             }
         }
     }
@@ -143,28 +82,18 @@ class GoalManagementViewModel @Inject constructor(
      */
     fun resetGoal() {
         viewModelScope.launch {
-            val defaultState = GoalState(
-                targetSteps = 10000,
-                startDate = System.currentTimeMillis(),
-                endDate = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_MONTH, 7)
-                }.timeInMillis,
-                walkFrequency = 3,
-                missionSuccessCount = 0,
-            )
+            val defaultState = GoalState()
+            // UI 상태 초기화
             _uiState.value = defaultState
 
-            // 서버에 기본값 저장
-            val targetUserId = currentUserId.value
-            if (targetUserId != null) {
-                val defaultGoal = Goal(
-                    targetStepCount = defaultState.targetSteps,
-                    targetWalkCount = defaultState.walkFrequency,
-                )
-                goalRepository.updateGoal(defaultGoal)
-                    .onError { throwable, message ->
-                        Timber.e(throwable, "목표 초기화 실패: $message")
-                    }
+            val defaultGoal = Goal(
+                targetStepCount = defaultState.targetSteps,
+                targetWalkCount = defaultState.walkFrequency
+            )
+            goalRepository.updateGoal(defaultGoal).onError { t, msg ->
+                Timber.e(t, "목표 초기화 실패: $msg")
+                // 실패 시 서버에서 다시 가져오기
+                refreshGoal()
             }
         }
     }

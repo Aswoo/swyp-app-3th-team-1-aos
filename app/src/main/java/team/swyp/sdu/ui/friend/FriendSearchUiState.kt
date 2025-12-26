@@ -26,3 +26,4 @@ sealed interface FriendSearchUiState {
     ) : FriendSearchUiState
 }
 
+

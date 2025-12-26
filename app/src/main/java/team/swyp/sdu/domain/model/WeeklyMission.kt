@@ -4,15 +4,15 @@ package team.swyp.sdu.domain.model
  * 주간 미션 도메인 모델
  */
 data class WeeklyMission(
-    val userWeeklyMissionId: Long = 0,
+    val userWeeklyMissionId: Long? = null,
     val missionId: Long = 0,
     val title: String = "",
     val description: String = "",
     val category: String = "",
     val type: String = "",
-    val status: String = "",
+    val status: String? = null,
     val rewardPoints: Int = 0,
-    val assignedConfigJson: String? = "{}",
+    val assignedConfigJson: String? = null,
     val weekStart: String? = null,
     val weekEnd: String? = null,
     val completedAt: String? = null,

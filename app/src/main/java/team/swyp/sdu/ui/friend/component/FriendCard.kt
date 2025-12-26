@@ -1,6 +1,7 @@
 package team.swyp.sdu.ui.friend.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,11 +58,12 @@ fun FriendCard(
     nickname: String,
     imageName: String? = null,
     followStatus: FollowStatus,
+    onCardClick: (String) -> Unit,
     onFollowClick: () -> Unit,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
+    Box(modifier = modifier.clickable(onClick = { onCardClick(nickname) })) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -149,6 +151,7 @@ private fun FollowButton(
                 fontWeight = FontWeight.Medium,
             )
         }
+
         FollowStatus.PENDING -> {
             // Figma 디자인: 요청 중 버튼 (회색 배경 #818185, 흰색 텍스트, body S/semibold)
             ButtonConfig(
@@ -158,6 +161,7 @@ private fun FollowButton(
                 fontWeight = FontWeight.SemiBold,
             )
         }
+
         FollowStatus.ACCEPTED -> {
             ButtonConfig(
                 text = "팔로잉",
@@ -166,6 +170,7 @@ private fun FollowButton(
                 fontWeight = FontWeight.Medium,
             )
         }
+
         FollowStatus.MYSELF -> {
             ButtonConfig(
                 text = "",
@@ -174,6 +179,7 @@ private fun FollowButton(
                 fontWeight = FontWeight.Medium,
             )
         }
+
         FollowStatus.FOLLOWING -> {
             ButtonConfig(
                 text = "팔로잉",
@@ -182,6 +188,7 @@ private fun FollowButton(
                 fontWeight = FontWeight.Medium,
             )
         }
+
         FollowStatus.NONE -> {
             ButtonConfig(
                 text = "팔로우",

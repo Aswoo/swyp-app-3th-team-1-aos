@@ -5,10 +5,13 @@ package team.swyp.sdu.domain.model
  */
 data class FollowerWalkRecord(
     val character: Character,
-    val walkProgressPercentage: String? = null,
-    val createdDate: String? = null,
+    val walkProgressPercentage: String,
+    val walkId: Long,
+    val createdDate: String,
     val stepCount: Int = 0,
     val totalDistance: Int = 0,
+    val likeCount: Int = 0,
+    val liked: Boolean = false
 )
 
 

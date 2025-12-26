@@ -105,8 +105,7 @@ private fun FriendScreenContent(
     Column(
         modifier =
             Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppHeader(title = "친구목록", onNavigateBack = onNavigateBack, rightAction = {

@@ -1,5 +1,6 @@
 package team.swyp.sdu.data.repository
 
+import android.net.Uri
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -72,17 +73,17 @@ class UserRepositoryImpl @Inject constructor(
             try {
                 val user = remoteDataSource.fetchUser()
                 Timber.d("사용자 정보 API 응답: nickname=${user.nickname}, imageName=${user.imageName}")
-                
+
                 // ✅ 이전 사용자 데이터 삭제 후 새 사용자 데이터 저장
                 // PrimaryKey가 nickname이므로 다른 사용자로 로그인 시 여러 레코드가 쌓일 수 있음
                 userDao.clear()
                 val entity = UserMapper.toEntity(user)
                 userDao.upsert(entity)
-                
+
                 // 저장 확인
                 val savedEntity = userDao.getUser()
                 Timber.d("Room 저장 확인: nickname=${savedEntity?.nickname}, imageName=${savedEntity?.imageName}")
-                
+
                 Result.Success(user)
             } catch (e: Exception) {
                 Timber.e(e, "사용자 프로필 갱신 실패")
@@ -124,17 +125,45 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun updateUserProfileImage(imageUri: Uri): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. 서버에 이미지 업로드
+                remoteDataSource.updateUserProfileImage(imageUri)
+                
+                // 2. 현재 사용자 정보 가져오기 (nickname 확인)
+                val currentUser = userDao.getUser()
+                if (currentUser == null) {
+                    Timber.w("현재 사용자 정보가 없어 refreshUser() 호출")
+                    refreshUser()
+                    return@withContext Result.Success(Unit)
+                }
+                
+                // 3. 서버에서 최신 사용자 정보를 가져와서 imageName 업데이트
+                val updatedUser = remoteDataSource.fetchUser()
+                userDao.updateImageNameByNickname(
+                    nickname = currentUser.nickname,
+                    imageName = updatedUser.imageName
+                )
+                
+                Timber.d("프로필 이미지 업데이트 완료: nickname=${currentUser.nickname}, imageName=${updatedUser.imageName}")
+                
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "사용자 프로필 이미지 업데이트 실패: $imageUri")
+                Result.Error(e, e.message)
+            }
+        }
+
     override suspend fun updateUserProfile(
         nickname: String,
         birthDate: String,
-        imageUri: String?,
     ): Result<User> =
         withContext(Dispatchers.IO) {
             try {
                 remoteDataSource.updateUserProfile(
                     nickname = nickname,
                     birthDate = birthDate,
-                    imageUri = imageUri,
                 )
                 // ✅ 서버 반영 후 → 다시 fetch → Room 저장
                 refreshUser()

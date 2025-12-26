@@ -28,108 +28,387 @@ import javax.inject.Singleton
  */
 @Singleton
 class WalkingSessionRepository
-    @Inject
-    constructor(
-        private val walkingSessionDao: WalkingSessionDao,
-        private val walkRemoteDataSource: WalkRemoteDataSource,
-        @ApplicationContext private val context: Context,
-    ) {
-        /**
-         * 세션 저장 (로컬 저장 + 서버 동기화 시도)
-         *
-         * @param session 저장할 산책 세션
-         * @param imageUri 산책 이미지 URI (선택사항)
-         * @return 저장된 세션의 로컬 ID
-         */
-        suspend fun saveSession(
-            session: WalkingSession,
-            imageUri: Uri? = null,
-        ): Long {
-            // 1. 로컬 저장 (PENDING)
-            val entity = WalkingSessionMapper.toEntity(
-                session,
-                syncState = SyncState.PENDING
+@Inject
+constructor(
+    private val walkingSessionDao: WalkingSessionDao,
+    private val walkRemoteDataSource: WalkRemoteDataSource,
+    @ApplicationContext private val context: Context,
+) {
+    /**
+     * 세션 저장 (로컬 저장 + 서버 동기화 시도)
+     *
+     * @param session 저장할 산책 세션
+     * @param imageUri 산책 이미지 URI (선택사항)
+     * @return 저장된 세션의 로컬 ID
+     */
+    suspend fun saveSession(
+        session: WalkingSession,
+        imageUri: Uri? = null,
+    ): Long {
+        // 1. 로컬 저장 (PENDING)
+        val entity = WalkingSessionMapper.toEntity(
+            session,
+            syncState = SyncState.PENDING
+        )
+        val localId = walkingSessionDao.insert(entity)
+
+        // 2. 서버 동기화 시도
+        try {
+            walkingSessionDao.updateSyncState(
+                localId,
+                SyncState.SYNCING
             )
-            val localId = walkingSessionDao.insert(entity)
 
-            // 2. 서버 동기화 시도
-            try {
-                walkingSessionDao.updateSyncState(
-                    localId,
-                    SyncState.SYNCING
-                )
+            syncToServer(session, imageUri, localId)
 
-                syncToServer(session, imageUri, localId)
-
-                walkingSessionDao.updateSyncState(
-                    localId,
-                    SyncState.SYNCED
-                )
-            } catch (e: Exception) {
-                walkingSessionDao.updateSyncState(
-                    localId,
-                    SyncState.FAILED
-                )
-                Timber.w(e, "서버 동기화 실패")
-            }
-
-            return localId
+            walkingSessionDao.updateSyncState(
+                localId,
+                SyncState.SYNCED
+            )
+        } catch (e: Exception) {
+            walkingSessionDao.updateSyncState(
+                localId,
+                SyncState.FAILED
+            )
+            Timber.w(e, "서버 동기화 실패")
         }
+
+        return localId
+    }
 
 
     /**
-         * 모든 세션 조회 (Flow로 실시간 업데이트)
-         */
-        fun getAllSessions(): Flow<List<WalkingSession>> =
-            walkingSessionDao
-                .getAllSessions()
-                .map { entities ->
-                    entities.map { WalkingSessionMapper.toDomain(it) }
+     * 모든 세션 조회 (Flow로 실시간 업데이트)
+     */
+    fun getAllSessions(): Flow<List<WalkingSession>> =
+        walkingSessionDao
+            .getAllSessions()
+            .map { entities ->
+                entities.map { WalkingSessionMapper.toDomain(it) }
+            }
+
+    /**
+     * 기간 내 세션 조회
+     */
+    fun getSessionsBetween(
+        startMillis: Long,
+        endMillis: Long,
+    ): Flow<List<WalkingSession>> =
+        walkingSessionDao
+            .getSessionsBetween(startMillis, endMillis)
+            .map { entities -> entities.map { WalkingSessionMapper.toDomain(it) } }
+
+    /**
+     * ID로 세션 조회
+     */
+    suspend fun getSessionById(id: Long): WalkingSession? =
+        walkingSessionDao.getSessionById(id)?.let { WalkingSessionMapper.toDomain(it) }
+
+    /**
+     * 세션 삭제
+     */
+    suspend fun deleteSession(id: Long) {
+        try {
+            walkingSessionDao.deleteById(id)
+            Timber.d("세션 삭제 완료: ID=$id")
+        } catch (e: Exception) {
+            Timber.e(e, "세션 삭제 실패: ID=$id")
+            throw e
+        }
+    }
+
+    /**
+     * 서버 동기화
+     *
+     * @param session 동기화할 산책 세션
+     * @param imageUri 산책 이미지 URI (선택사항)
+     * @param localId 로컬 데이터베이스 ID (동기화 상태 업데이트용)
+     */
+    private suspend fun syncToServer(
+        session: WalkingSession,
+        imageUri: Uri?,
+        localId: Long,
+    ) = withContext(Dispatchers.IO) {
+        val imageUriString = imageUri?.toString()
+        val result = walkRemoteDataSource.saveWalk(session, imageUriString)
+
+        when (result) {
+            is Result.Success -> {
+                val response = result.data
+                if (response.isSuccessful) {
+                    // 서버 응답에서 받은 imageUrl을 serverImageUrl에 저장
+                    val responseBody = response.body()
+                    val serverImageUrl = responseBody?.imageUrl
+
+                    // Entity 업데이트 (serverImageUrl 저장)
+                    val entity = walkingSessionDao.getSessionById(localId)
+                    if (entity != null && serverImageUrl != null) {
+                        val updatedEntity = entity.copy(
+                            serverImageUrl = serverImageUrl
+                            // localImagePath는 유지 (오프라인 지원)
+                        )
+                        walkingSessionDao.update(updatedEntity)
+                    }
+
+                    // 서버 동기화 성공
+                    // 로컬 DB의 동기화 상태는 이미 SYNCED로 업데이트됨
+                    Timber.d("서버 동기화 성공: 세션 ID=${session.id}, serverImageUrl=$serverImageUrl")
+                } else {
+                    val errorCode = response.code()
+                    val errorMessage = when (errorCode) {
+                        508 -> "서버가 요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
+                        500 -> "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                        502 -> "서버 게이트웨이 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                        503 -> "서버가 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해주세요."
+                        504 -> "서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요."
+                        else -> response.message() ?: "서버 동기화 실패 (HTTP $errorCode)"
+                    }
+                    Timber.w("서버 동기화 실패: HTTP $errorCode - $errorMessage")
+                    throw Exception(errorMessage)
+                }
+            }
+
+            is Result.Error -> {
+                Timber.e(result.exception, "서버 동기화 중 오류 발생: ${result.message}")
+                throw result.exception
+            }
+
+            is Result.Loading -> {
+                // 이 경우는 발생하지 않아야 하지만, 안전을 위해 처리
+                Timber.w("서버 동기화가 로딩 상태입니다")
+            }
+        }
+    }
+
+    /**
+     * 미동기화 세션 모두 동기화 (스텁)
+     *
+     * TODO: 실제 서버 API 연동 시 이 함수를 구현하세요.
+     */
+    suspend fun syncAllPendingSessions() {
+        // TODO: 서버 API 연동 구현 필요
+        // val unsyncedSessions = walkingSessionDao.getUnsyncedSessions()
+        // unsyncedSessions.forEach { entity ->
+        //     try {
+        //         syncToServer(entity.toDomain())
+        //     } catch (e: Exception) {
+        //         Timber.w(e, "세션 동기화 실패: ID=${entity.id}")
+        //     }
+        // }
+
+        Timber.d("미동기화 세션 동기화 스텁 호출됨 (실제 구현 필요)")
+    }
+
+
+    /**
+     * 총 걸음수 조회 (Flow로 실시간 업데이트)
+     */
+    fun getTotalStepCount(): Flow<Int> = walkingSessionDao.getTotalStepCount()
+
+    /**
+     * 총 이동거리 조회 (Flow로 실시간 업데이트, 미터 단위)
+     */
+    fun getTotalDistance(): Flow<Float> = walkingSessionDao.getTotalDistance()
+
+    /**
+     * 총 산책 시간 조회 (Flow로 실시간 업데이트, 밀리초 단위)
+     */
+    fun getTotalDuration(): Flow<Long> = walkingSessionDao.getTotalDuration()
+
+    /**
+     * 부분 세션 생성 (stopWalking() 실행 시 즉시 호출)
+     *
+     * @param session 기본 세션 데이터
+     *   - postWalkEmotion: 선택되지 않았으면 preWalkEmotion과 동일
+     *   - localImagePath: null (나중에 업데이트)
+     *   - serverImageUrl: null (서버 동기화 후 업데이트)
+     *   - note: null (나중에 업데이트)
+     * @return 저장된 세션의 로컬 ID
+     */
+    suspend fun createSessionPartial(session: WalkingSession): Long {
+        // 1. 로컬 저장 (PENDING 상태)
+        val entity = WalkingSessionMapper.toEntity(
+            session = session,
+            syncState = SyncState.PENDING
+        )
+        val localId = walkingSessionDao.insert(entity)
+
+        // 서버 동기화는 하지 않음 (아직 완료되지 않았으므로)
+
+        Timber.d("부분 세션 저장 완료: localId=$localId")
+        return localId
+    }
+
+    /**
+     * 세션의 산책 후 감정 업데이트 (PostWalkingEmotionScreen에서 선택 시)
+     *
+     * @param localId 업데이트할 세션의 로컬 ID
+     * @param postWalkEmotion 선택된 산책 후 감정
+     */
+    suspend fun updatePostWalkEmotion(
+        localId: Long,
+        postWalkEmotion: EmotionType
+    ) {
+        val entity = walkingSessionDao.getSessionById(localId)
+            ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
+
+        val updatedEntity = entity.copy(
+            postWalkEmotion = postWalkEmotion.en
+        )
+
+        walkingSessionDao.update(updatedEntity)
+
+        Timber.d("산책 후 감정 업데이트 완료: localId=$localId, emotion=$postWalkEmotion")
+    }
+
+    /**
+     * URI를 파일로 복사하고 경로 반환
+     *
+     * **두 가지 경우 처리:**
+     * 1. **카메라 촬영**: MediaStore에 저장된 이미지 (content://media/...)
+     * 2. **갤러리 선택**: 갤러리 앱의 이미지 (content://media/... 또는 content://com.android.providers.media.documents/...)
+     *
+     * **왜 복사가 필요한가?**
+     * - 카메라 촬영: MediaStore에 저장되어 있지만, 사용자가 갤러리에서 삭제할 수 있음
+     * - 갤러리 선택: 다른 앱의 파일을 참조하므로 권한 문제나 파일 삭제 가능성 있음
+     * - **앱 내부 저장소에 복사하면**: 앱과 함께 관리되며, 삭제 시점을 제어할 수 있음
+     *
+     * @param uri 복사할 이미지 URI (content:// 또는 file://)
+     * @return 저장된 파일의 절대 경로 (실패 시 null)
+     */
+    private suspend fun copyImageUriToFile(uri: Uri): String? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            // URI 스킴 확인
+            val scheme = uri.scheme
+            Timber.d("이미지 URI 스킴: $scheme, URI: $uri")
+
+            // Content URI인 경우 (카메라 촬영 또는 갤러리 선택)
+            val inputStream = when {
+                scheme == "content" -> {
+                    context.contentResolver.openInputStream(uri)
                 }
 
-        /**
-         * 기간 내 세션 조회
-         */
-        fun getSessionsBetween(
-            startMillis: Long,
-            endMillis: Long,
-        ): Flow<List<WalkingSession>> =
-            walkingSessionDao
-                .getSessionsBetween(startMillis, endMillis)
-                .map { entities -> entities.map { WalkingSessionMapper.toDomain(it) } }
+                scheme == "file" -> {
+                    // File URI인 경우 (드물지만 가능)
+                    File(uri.path ?: return@withContext null).inputStream()
+                }
 
-        /**
-         * ID로 세션 조회
-         */
-        suspend fun getSessionById(id: Long): WalkingSession? =
-            walkingSessionDao.getSessionById(id)?.let { WalkingSessionMapper.toDomain(it) }
+                else -> {
+                    Timber.w("지원하지 않는 URI 스킴: $scheme")
+                    return@withContext null
+                }
+            } ?: return@withContext null
 
-        /**
-         * 세션 삭제
-         */
-        suspend fun deleteSession(id: Long) {
+            // 파일명 생성 (타임스탬프 기반)
+            val timestamp = System.currentTimeMillis()
+            val fileName = "walking_image_${timestamp}.jpg"
+
+            // 앱 내부 저장소의 Pictures 디렉토리에 저장
+            // getExternalFilesDir: 앱 전용 외부 저장소 (앱 삭제 시 함께 삭제됨)
+            // filesDir: 앱 내부 저장소 (항상 사용 가능)
+            val fileDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                ?: context.filesDir
+            val file = File(fileDir, fileName)
+
+            // 파일 복사
+            FileOutputStream(file).use { output ->
+                inputStream.copyTo(output)
+            }
+
+            val absolutePath = file.absolutePath
+            Timber.d("이미지 파일 복사 완료: $absolutePath (원본 URI: $uri)")
+            absolutePath
+        } catch (e: Exception) {
+            Timber.e(e, "이미지 파일 복사 실패: $uri")
+            null
+        }
+    }
+
+    /**
+     * 세션의 이미지와 노트 업데이트 (사진/텍스트 단계)
+     *
+     * @param localId 업데이트할 세션의 로컬 ID
+     * @param imageUri 이미지 URI (선택사항, null이면 기존 값 유지)
+     * @param note 노트 텍스트 (선택사항, null이면 기존 값 유지)
+     */
+    suspend fun updateSessionImageAndNote(
+        localId: Long,
+        imageUri: Uri? = null,
+        note: String? = null
+    ) {
+        val entity = walkingSessionDao.getSessionById(localId)
+            ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
+
+        // URI를 파일 경로로 변환하여 localImagePath에 저장
+        val localImagePath = imageUri?.let { copyImageUriToFile(it) }
+
+        val updatedEntity = entity.copy(
+            localImagePath = localImagePath ?: entity.localImagePath, // 로컬 파일 경로 저장
+            note = note ?: entity.note
+        )
+
+        walkingSessionDao.update(updatedEntity)
+
+        Timber.d("세션 이미지/노트 업데이트 완료: localId=$localId, localImagePath=$localImagePath, note=$note")
+
+        // 서버 동기화는 WalkingResultScreen에서 "기록 완료" 버튼 클릭 시 처리
+    }
+
+    /**
+     * 세션을 서버와 동기화 (WalkingResultScreen에서 "기록 완료" 버튼 클릭 시 호출)
+     *
+     * @param localId 동기화할 세션의 로컬 ID
+     */
+    suspend fun syncSessionToServer(localId: Long) {
+        val entity = walkingSessionDao.getSessionById(localId)
+            ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
+
+        // 이미 동기화된 경우 스킵
+        if (entity.syncState == SyncState.SYNCED) {
+            Timber.d("이미 동기화된 세션: localId=$localId")
+            return
+        }
+
+        // Domain 모델로 변환
+        val session = WalkingSessionMapper.toDomain(entity)
+
+        // 로컬 이미지 파일 경로를 URI로 변환 (서버 업로드용)
+        val imageUri = entity.localImagePath?.let { imagePath ->
             try {
-                walkingSessionDao.deleteById(id)
-                Timber.d("세션 삭제 완료: ID=$id")
+                val file = File(imagePath)
+                if (file.exists()) {
+                    // FileProvider를 사용하여 URI 생성 (Android 7.0+ 호환)
+                    // FileProvider는 AndroidManifest.xml에 선언되어 있어야 함
+                    val authority = "${context.packageName}.fileprovider"
+                    androidx.core.content.FileProvider.getUriForFile(
+                        context,
+                        authority,
+                        file
+                    )
+                } else {
+                    Timber.w("이미지 파일이 존재하지 않음: $imagePath")
+                    null
+                }
             } catch (e: Exception) {
-                Timber.e(e, "세션 삭제 실패: ID=$id")
-                throw e
+                Timber.e(e, "이미지 URI 변환 실패: $imagePath")
+                null
             }
         }
 
-        /**
-         * 서버 동기화
-         *
-         * @param session 동기화할 산책 세션
-         * @param imageUri 산책 이미지 URI (선택사항)
-         * @param localId 로컬 데이터베이스 ID (동기화 상태 업데이트용)
-         */
-        private suspend fun syncToServer(
-            session: WalkingSession,
-            imageUri: Uri?,
-            localId: Long,
-        ) = withContext(Dispatchers.IO) {
+        // 이미지 URI 로깅 (디버깅용)
+        if (imageUri != null) {
+            Timber.d("서버 동기화: 이미지 URI 생성 완료 - $imageUri")
+        } else {
+            Timber.d("서버 동기화: 이미지 URI가 null입니다 (이미지 없이 동기화)")
+        }
+
+        // 동기화 상태를 SYNCING으로 변경
+        walkingSessionDao.updateSyncState(localId, SyncState.SYNCING)
+
+        try {
+            // 서버 동기화 시도 (imageUri를 String으로 변환하여 전달)
             val imageUriString = imageUri?.toString()
+            Timber.d("서버 동기화: imageUriString=$imageUriString")
             val result = walkRemoteDataSource.saveWalk(session, imageUriString)
 
             when (result) {
@@ -139,20 +418,16 @@ class WalkingSessionRepository
                         // 서버 응답에서 받은 imageUrl을 serverImageUrl에 저장
                         val responseBody = response.body()
                         val serverImageUrl = responseBody?.imageUrl
-                        
-                        // Entity 업데이트 (serverImageUrl 저장)
-                        val entity = walkingSessionDao.getSessionById(localId)
-                        if (entity != null && serverImageUrl != null) {
-                            val updatedEntity = entity.copy(
-                                serverImageUrl = serverImageUrl
-                                // localImagePath는 유지 (오프라인 지원)
-                            )
-                            walkingSessionDao.update(updatedEntity)
-                        }
-                        
-                        // 서버 동기화 성공
-                        // 로컬 DB의 동기화 상태는 이미 SYNCED로 업데이트됨
-                        Timber.d("서버 동기화 성공: 세션 ID=${session.id}, serverImageUrl=$serverImageUrl")
+
+                        val updatedEntity = entity.copy(
+                            serverImageUrl = serverImageUrl // 서버에서 받은 URL 저장
+                            // localImagePath는 유지 (오프라인 지원)
+                        )
+                        walkingSessionDao.update(updatedEntity)
+
+                        // 동기화 성공
+                        walkingSessionDao.updateSyncState(localId, SyncState.SYNCED)
+                        Timber.d("서버 동기화 성공: localId=$localId, serverImageUrl=$serverImageUrl")
                     } else {
                         val errorCode = response.code()
                         val errorMessage = when (errorCode) {
@@ -167,293 +442,40 @@ class WalkingSessionRepository
                         throw Exception(errorMessage)
                     }
                 }
+
                 is Result.Error -> {
-                    Timber.e(result.exception, "서버 동기화 중 오류 발생: ${result.message}")
                     throw result.exception
                 }
+
                 is Result.Loading -> {
-                    // 이 경우는 발생하지 않아야 하지만, 안전을 위해 처리
                     Timber.w("서버 동기화가 로딩 상태입니다")
                 }
             }
-        }
-
-        /**
-         * 미동기화 세션 모두 동기화 (스텁)
-         *
-         * TODO: 실제 서버 API 연동 시 이 함수를 구현하세요.
-         */
-        suspend fun syncAllPendingSessions() {
-            // TODO: 서버 API 연동 구현 필요
-            // val unsyncedSessions = walkingSessionDao.getUnsyncedSessions()
-            // unsyncedSessions.forEach { entity ->
-            //     try {
-            //         syncToServer(entity.toDomain())
-            //     } catch (e: Exception) {
-            //         Timber.w(e, "세션 동기화 실패: ID=${entity.id}")
-            //     }
-            // }
-
-            Timber.d("미동기화 세션 동기화 스텁 호출됨 (실제 구현 필요)")
-        }
-
-
-        /**
-         * 총 걸음수 조회 (Flow로 실시간 업데이트)
-         */
-        fun getTotalStepCount(): Flow<Int> = walkingSessionDao.getTotalStepCount()
-
-        /**
-         * 총 이동거리 조회 (Flow로 실시간 업데이트, 미터 단위)
-         */
-        fun getTotalDistance(): Flow<Float> = walkingSessionDao.getTotalDistance()
-
-        /**
-         * 부분 세션 생성 (stopWalking() 실행 시 즉시 호출)
-         * 
-         * @param session 기본 세션 데이터
-         *   - postWalkEmotion: 선택되지 않았으면 preWalkEmotion과 동일
-         *   - localImagePath: null (나중에 업데이트)
-         *   - serverImageUrl: null (서버 동기화 후 업데이트)
-         *   - note: null (나중에 업데이트)
-         * @return 저장된 세션의 로컬 ID
-         */
-        suspend fun createSessionPartial(session: WalkingSession): Long {
-            // 1. 로컬 저장 (PENDING 상태)
-            val entity = WalkingSessionMapper.toEntity(
-                session = session,
-                syncState = SyncState.PENDING
-            )
-            val localId = walkingSessionDao.insert(entity)
-            
-            // 서버 동기화는 하지 않음 (아직 완료되지 않았으므로)
-            
-            Timber.d("부분 세션 저장 완료: localId=$localId")
-            return localId
-        }
-
-        /**
-         * 세션의 산책 후 감정 업데이트 (PostWalkingEmotionScreen에서 선택 시)
-         * 
-         * @param localId 업데이트할 세션의 로컬 ID
-         * @param postWalkEmotion 선택된 산책 후 감정
-         */
-        suspend fun updatePostWalkEmotion(
-            localId: Long,
-            postWalkEmotion: EmotionType
-        ) {
-            val entity = walkingSessionDao.getSessionById(localId)
-                ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
-            
-            val updatedEntity = entity.copy(
-                postWalkEmotion = postWalkEmotion.name
-            )
-            
-            walkingSessionDao.update(updatedEntity)
-            
-            Timber.d("산책 후 감정 업데이트 완료: localId=$localId, emotion=$postWalkEmotion")
-        }
-
-        /**
-         * URI를 파일로 복사하고 경로 반환
-         * 
-         * **두 가지 경우 처리:**
-         * 1. **카메라 촬영**: MediaStore에 저장된 이미지 (content://media/...)
-         * 2. **갤러리 선택**: 갤러리 앱의 이미지 (content://media/... 또는 content://com.android.providers.media.documents/...)
-         * 
-         * **왜 복사가 필요한가?**
-         * - 카메라 촬영: MediaStore에 저장되어 있지만, 사용자가 갤러리에서 삭제할 수 있음
-         * - 갤러리 선택: 다른 앱의 파일을 참조하므로 권한 문제나 파일 삭제 가능성 있음
-         * - **앱 내부 저장소에 복사하면**: 앱과 함께 관리되며, 삭제 시점을 제어할 수 있음
-         * 
-         * @param uri 복사할 이미지 URI (content:// 또는 file://)
-         * @return 저장된 파일의 절대 경로 (실패 시 null)
-         */
-        private suspend fun copyImageUriToFile(uri: Uri): String? = withContext(Dispatchers.IO) {
-            return@withContext try {
-                // URI 스킴 확인
-                val scheme = uri.scheme
-                Timber.d("이미지 URI 스킴: $scheme, URI: $uri")
-                
-                // Content URI인 경우 (카메라 촬영 또는 갤러리 선택)
-                val inputStream = when {
-                    scheme == "content" -> {
-                        context.contentResolver.openInputStream(uri)
-                    }
-                    scheme == "file" -> {
-                        // File URI인 경우 (드물지만 가능)
-                        File(uri.path ?: return@withContext null).inputStream()
-                    }
-                    else -> {
-                        Timber.w("지원하지 않는 URI 스킴: $scheme")
-                        return@withContext null
-                    }
-                } ?: return@withContext null
-                
-                // 파일명 생성 (타임스탬프 기반)
-                val timestamp = System.currentTimeMillis()
-                val fileName = "walking_image_${timestamp}.jpg"
-                
-                // 앱 내부 저장소의 Pictures 디렉토리에 저장
-                // getExternalFilesDir: 앱 전용 외부 저장소 (앱 삭제 시 함께 삭제됨)
-                // filesDir: 앱 내부 저장소 (항상 사용 가능)
-                val fileDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
-                    ?: context.filesDir
-                val file = File(fileDir, fileName)
-                
-                // 파일 복사
-                FileOutputStream(file).use { output ->
-                    inputStream.copyTo(output)
-                }
-                
-                val absolutePath = file.absolutePath
-                Timber.d("이미지 파일 복사 완료: $absolutePath (원본 URI: $uri)")
-                absolutePath
-            } catch (e: Exception) {
-                Timber.e(e, "이미지 파일 복사 실패: $uri")
-                null
-            }
-        }
-
-        /**
-         * 세션의 이미지와 노트 업데이트 (사진/텍스트 단계)
-         * 
-         * @param localId 업데이트할 세션의 로컬 ID
-         * @param imageUri 이미지 URI (선택사항, null이면 기존 값 유지)
-         * @param note 노트 텍스트 (선택사항, null이면 기존 값 유지)
-         */
-        suspend fun updateSessionImageAndNote(
-            localId: Long,
-            imageUri: Uri? = null,
-            note: String? = null
-        ) {
-            val entity = walkingSessionDao.getSessionById(localId)
-                ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
-            
-            // URI를 파일 경로로 변환하여 localImagePath에 저장
-            val localImagePath = imageUri?.let { copyImageUriToFile(it) }
-            
-            val updatedEntity = entity.copy(
-                localImagePath = localImagePath ?: entity.localImagePath, // 로컬 파일 경로 저장
-                note = note ?: entity.note
-            )
-            
-            walkingSessionDao.update(updatedEntity)
-            
-            Timber.d("세션 이미지/노트 업데이트 완료: localId=$localId, localImagePath=$localImagePath, note=$note")
-            
-            // 서버 동기화는 WalkingResultScreen에서 "기록 완료" 버튼 클릭 시 처리
-        }
-
-        /**
-         * 세션을 서버와 동기화 (WalkingResultScreen에서 "기록 완료" 버튼 클릭 시 호출)
-         * 
-         * @param localId 동기화할 세션의 로컬 ID
-         */
-        suspend fun syncSessionToServer(localId: Long) {
-            val entity = walkingSessionDao.getSessionById(localId)
-                ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
-            
-            // 이미 동기화된 경우 스킵
-            if (entity.syncState == SyncState.SYNCED) {
-                Timber.d("이미 동기화된 세션: localId=$localId")
+        } catch (e: Exception) {
+            // CancellationException인 경우 (ViewModel이 destroy되거나 화면을 벗어난 경우)
+            // 취소된 경우에는 PENDING 상태로 되돌려서 나중에 재시도 가능하도록 함
+            if (e is CancellationException) {
+                walkingSessionDao.updateSyncState(localId, SyncState.PENDING)
+                Timber.w("서버 동기화 취소됨 (재시도 가능): localId=$localId")
+                // 취소 예외는 다시 throw하지 않음 (정상적인 취소이므로)
                 return
             }
-            
-            // Domain 모델로 변환
-            val session = WalkingSessionMapper.toDomain(entity)
-            
-            // 로컬 이미지 파일 경로를 URI로 변환 (서버 업로드용)
-            val imageUri = entity.localImagePath?.let { imagePath ->
-                try {
-                    val file = File(imagePath)
-                    if (file.exists()) {
-                        // FileProvider를 사용하여 URI 생성 (Android 7.0+ 호환)
-                        // FileProvider는 AndroidManifest.xml에 선언되어 있어야 함
-                        val authority = "${context.packageName}.fileprovider"
-                        androidx.core.content.FileProvider.getUriForFile(
-                            context,
-                            authority,
-                            file
-                        )
-                    } else {
-                        Timber.w("이미지 파일이 존재하지 않음: $imagePath")
-                        null
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "이미지 URI 변환 실패: $imagePath")
-                    null
-                }
-            }
-            
-            // 이미지 URI 로깅 (디버깅용)
-            if (imageUri != null) {
-                Timber.d("서버 동기화: 이미지 URI 생성 완료 - $imageUri")
-            } else {
-                Timber.d("서버 동기화: 이미지 URI가 null입니다 (이미지 없이 동기화)")
-            }
-            
-            // 동기화 상태를 SYNCING으로 변경
-            walkingSessionDao.updateSyncState(localId, SyncState.SYNCING)
-            
-            try {
-                // 서버 동기화 시도 (imageUri를 String으로 변환하여 전달)
-                val imageUriString = imageUri?.toString()
-                Timber.d("서버 동기화: imageUriString=$imageUriString")
-                val result = walkRemoteDataSource.saveWalk(session, imageUriString)
-                
-                when (result) {
-                    is Result.Success -> {
-                        val response = result.data
-                        if (response.isSuccessful) {
-                            // 서버 응답에서 받은 imageUrl을 serverImageUrl에 저장
-                            val responseBody = response.body()
-                            val serverImageUrl = responseBody?.imageUrl
-                            
-                            val updatedEntity = entity.copy(
-                                serverImageUrl = serverImageUrl // 서버에서 받은 URL 저장
-                                // localImagePath는 유지 (오프라인 지원)
-                            )
-                            walkingSessionDao.update(updatedEntity)
-                            
-                            // 동기화 성공
-                            walkingSessionDao.updateSyncState(localId, SyncState.SYNCED)
-                            Timber.d("서버 동기화 성공: localId=$localId, serverImageUrl=$serverImageUrl")
-                        } else {
-                            val errorCode = response.code()
-                            val errorMessage = when (errorCode) {
-                                508 -> "서버가 요청을 처리하는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요."
-                                500 -> "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-                                502 -> "서버 게이트웨이 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-                                503 -> "서버가 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해주세요."
-                                504 -> "서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요."
-                                else -> response.message() ?: "서버 동기화 실패 (HTTP $errorCode)"
-                            }
-                            Timber.w("서버 동기화 실패: HTTP $errorCode - $errorMessage")
-                            throw Exception(errorMessage)
-                        }
-                    }
-                    is Result.Error -> {
-                        throw result.exception
-                    }
-                    is Result.Loading -> {
-                        Timber.w("서버 동기화가 로딩 상태입니다")
-                    }
-                }
-            } catch (e: Exception) {
-                // CancellationException인 경우 (ViewModel이 destroy되거나 화면을 벗어난 경우)
-                // 취소된 경우에는 PENDING 상태로 되돌려서 나중에 재시도 가능하도록 함
-                if (e is CancellationException) {
-                    walkingSessionDao.updateSyncState(localId, SyncState.PENDING)
-                    Timber.w("서버 동기화 취소됨 (재시도 가능): localId=$localId")
-                    // 취소 예외는 다시 throw하지 않음 (정상적인 취소이므로)
-                    return
-                }
-                
-                // 실제 서버 에러인 경우에만 FAILED 상태로 변경
-                walkingSessionDao.updateSyncState(localId, SyncState.FAILED)
-                Timber.e(e, "서버 동기화 실패: localId=$localId")
-                throw e
-            }
+
+            // 실제 서버 에러인 경우에만 FAILED 상태로 변경
+            walkingSessionDao.updateSyncState(localId, SyncState.FAILED)
+            Timber.e(e, "서버 동기화 실패: localId=$localId")
+            throw e
         }
     }
+
+    suspend fun updateSessionNote(localId: Long, newNote: String) {
+        val entity = walkingSessionDao.getSessionById(localId)
+            ?: throw IllegalStateException("세션을 찾을 수 없습니다: ID=$localId")
+
+        val updatedEntity = entity.copy(note = newNote)
+        walkingSessionDao.update(updatedEntity)
+
+        Timber.d("세션 노트 업데이트 완료: localId: $localId : note : $newNote)")
+
+    }
+}

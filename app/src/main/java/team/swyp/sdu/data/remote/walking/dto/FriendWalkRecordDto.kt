@@ -36,3 +36,4 @@ data class FriendWalkRecordDto(
     val isLiked: Boolean = false,
 )
 
+

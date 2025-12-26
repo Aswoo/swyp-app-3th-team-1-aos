@@ -84,7 +84,7 @@ fun TermsAgreementScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.navigationBars)
+
     ) {
         AppHeader(
             title = "",

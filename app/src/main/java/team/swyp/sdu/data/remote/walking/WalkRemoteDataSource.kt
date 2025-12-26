@@ -124,8 +124,8 @@ class WalkRemoteDataSource @Inject constructor(
 
         // WalkSaveRequest 생성 (서버 요구사항: preWalkEmotion, postWalkEmotion, note, points, endTime, startTime, totalDistance, stepCount)
         val request = WalkingSessionRequest(
-            preWalkEmotion = session.preWalkEmotion.name,
-            postWalkEmotion = session.postWalkEmotion.name,
+            preWalkEmotion = session.preWalkEmotion.en,
+            postWalkEmotion = session.postWalkEmotion.en,
             note = session.note,
             points = walkPoints,
             endTime = session.endTime ?: System.currentTimeMillis(), // endTime이 null이면 현재 시간 사용
@@ -307,57 +307,6 @@ class WalkRemoteDataSource @Inject constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "팔로워 산책 기록 조회 실패: $nickname")
-            Result.Error(e, e.message ?: "네트워크 오류가 발생했습니다")
-        }
-    }
-
-    /**
-     * 내 최근 산책 기록 조회
-     *
-     * @param lat 위도 (선택사항)
-     * @param lon 경도 (선택사항)
-     * @return 내 최근 산책 기록 정보
-     */
-    suspend fun getMyRecentWalkRecord(
-        lat: Double? = null,
-        lon: Double? = null,
-    ): Result<FollowerWalkRecordDto> {
-        return try {
-            val response = followerApi.getMyRecentWalkRecord(lat, lon)
-            
-            if (response.isSuccessful) {
-                val data = response.body()
-                if (data != null) {
-                    Timber.d("내 최근 산책 기록 조회 성공")
-                    Result.Success(data)
-                } else {
-                    Timber.w("내 최근 산책 기록 응답 본문이 null")
-                    Result.Error(
-                        Exception("응답 데이터가 없습니다"),
-                        "응답 데이터가 없습니다"
-                    )
-                }
-            } else {
-                Timber.w("내 최근 산책 기록 조회 실패: HTTP ${response.code()}, 메시지: ${response.message()}")
-                // 응답 본문이 있으면 로깅
-                response.errorBody()?.let { errorBody ->
-                    try {
-                        val errorString = errorBody.string()
-                        Timber.w("에러 응답 본문: $errorString")
-                    } catch (e: Exception) {
-                        Timber.w(e, "에러 응답 본문 읽기 실패")
-                    }
-                }
-                Result.Error(
-                    Exception("HTTP ${response.code()}: ${response.message()}"),
-                    "서버 오류가 발생했습니다"
-                )
-            }
-        } catch (e: CancellationException) {
-            Timber.d("내 최근 산책 기록 조회 취소됨 (Coroutine 취소)")
-            throw e
-        } catch (e: Exception) {
-            Timber.e(e, "내 최근 산책 기록 조회 실패")
             Result.Error(e, e.message ?: "네트워크 오류가 발생했습니다")
         }
     }

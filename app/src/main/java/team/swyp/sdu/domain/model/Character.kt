@@ -13,8 +13,9 @@ data class Character(
     val backgroundImageName: String? = null,
     val level: Int = 1,
     val grade: Grade = Grade.SEED,
-    val nickName: String? = null,
+    val nickName: String = "게스트",
 )
+
 
 
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import team.swyp.sdu.data.remote.friend.FollowRemoteDataSource
 import team.swyp.sdu.data.remote.user.AlreadyFollowingException
 import team.swyp.sdu.data.remote.user.FollowRequestAlreadyExistsException
 import team.swyp.sdu.data.remote.user.FollowSelfException
@@ -37,6 +38,7 @@ class FriendViewModel
 @Inject
 constructor(
     private val userRemoteDataSource: UserRemoteDataSource,
+    private val followRemoteDataSource: FollowRemoteDataSource,
 ) : ViewModel() {
 
     private val _friends =
@@ -157,7 +159,7 @@ constructor(
         // 서버 요청 (백그라운드)
         viewModelScope.launch {
             try {
-                userRemoteDataSource.followUserByNickname(trimmedNickname)
+                followRemoteDataSource.followUserByNickname(trimmedNickname)
                 Timber.d("팔로우 성공: $trimmedNickname")
                 // 성공 시 이미 UI가 업데이트되어 있으므로 추가 작업 없음
             } catch (e: FollowUserNotFoundException) {

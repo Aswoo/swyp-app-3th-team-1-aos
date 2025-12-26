@@ -16,6 +16,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.data.repository.WalkingSessionRepository
+import team.swyp.sdu.utils.CalenderUtils.dayRange
+import team.swyp.sdu.utils.CalenderUtils.monthRange
+import team.swyp.sdu.utils.CalenderUtils.weekRange
 import team.swyp.sdu.utils.WalkingTestData
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -40,6 +43,12 @@ class CalendarViewModel @Inject constructor(
     ) {
         val durationHours: Int get() = (durationMillis / (1000 * 60 * 60)).toInt()
         val durationMinutesRemainder: Int get() = ((durationMillis / (1000 * 60)) % 60).toInt()
+
+        companion object {
+            fun empty(): WalkAggregate {
+                return WalkAggregate(steps = 0, durationMillis = 0L)
+            }
+        }
     }
 
     private val today = MutableStateFlow(LocalDate.now())
@@ -136,7 +145,7 @@ class CalendarViewModel @Inject constructor(
                         }
                     if (hasNovDec) {
                         Timber.d("Dummy data skipped: early-December data already exists")
-                    
+
                     } else {
                         val decemberRange = WalkingTestData.generateDecemberRangeSessions()
                         val todaySession = WalkingTestData.generateSessionForDate(LocalDate.now())
@@ -148,6 +157,14 @@ class CalendarViewModel @Inject constructor(
                     Timber.e(e, "Dummy data generation failed")
                     "실패: ${e.message ?: "알 수 없는 오류"}"
                 }
+            }
+        }
+    }
+
+    fun updateSessionNote(localId: Long, note: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                walkingSessionRepository.updateSessionNote(localId, note)
             }
         }
     }
@@ -193,27 +210,6 @@ class CalendarViewModel @Inject constructor(
         return WalkAggregate(steps, duration)
     }
 
-    private fun dayRange(date: LocalDate): Pair<Long, Long> {
-        val start = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val end = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-        return start to end
-    }
-
-    private fun weekRange(date: LocalDate): Pair<Long, Long> {
-        val startDate = date.with(DayOfWeek.MONDAY)
-        val endDate = startDate.plusDays(7)
-        val start = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val end = endDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-        return start to end
-    }
-
-    private fun monthRange(date: LocalDate): Pair<Long, Long> {
-        val startDate = date.withDayOfMonth(1)
-        val endDate = startDate.plusMonths(1)
-        val start = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val end = endDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-        return start to end
-    }
 }
 
 

@@ -1,11 +1,8 @@
 package team.swyp.sdu.ui.screens
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -22,7 +19,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import team.swyp.sdu.navigation.Screen
@@ -42,7 +38,6 @@ fun MainScreen(
     val currentRoute = currentBackStackEntry?.destination?.route
 
 
-
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // navigation 상태에 따라 탭 결정
@@ -54,11 +49,12 @@ fun MainScreen(
     }
 
     // 계산된 탭 인덱스 사용 (navigation에서 돌아올 때)
-    val currentTabIndex = if (calculatedTabIndex != selectedTabIndex && calculatedTabIndex in 0..2) {
-        calculatedTabIndex
-    } else {
-        selectedTabIndex
-    }
+    val currentTabIndex =
+        if (calculatedTabIndex != selectedTabIndex && calculatedTabIndex in 0..2) {
+            calculatedTabIndex
+        } else {
+            selectedTabIndex
+        }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -69,7 +65,7 @@ fun MainScreen(
                     onClick = {
                         navController.navigate(Screen.Walking.route)
                     },
-                    modifier = Modifier.padding(bottom = 40.dp), // NavigationBar 위에 표시
+//                    modifier = Modifier.padding(bottom = 40.dp), // NavigationBar 위에 표시
                 )
             }
         },
@@ -122,19 +118,17 @@ fun MainScreen(
                 Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.navigationBars),
         ) {
             when (currentTabIndex) {
                 0 -> HomeScreen(
-                    onClickWalk = {}, // FloatingActionButton에서 처리하므로 빈 함수
-                    onClickGoal = { /* TODO: 목표 설정 네비게이션 */ },
+                    onClickWalk = { navController.navigate(Screen.Walking.route) }, // FloatingActionButton에서 처리하므로 빈 함수
+                    onClickAlarm = { navController.navigate(Screen.Alarm.route) },
                     onClickMission = {
                         navController.navigate(Screen.Mission.route)
                     },
                 )
 
                 1 -> RecordRoute(
-                    navController = navController,
                     onStartOnboarding = {
                         navController.navigate(Screen.Onboarding.route)
                     },
@@ -143,6 +137,9 @@ fun MainScreen(
                     },
                     onNavigateToFriend = {
                         navController.navigate(Screen.Friends.route)
+                    },
+                    onNavigateToDailyRecord = { dateString ->
+                        navController.navigate(Screen.DailyRecord.createRoute(dateString))
                     }
                 )
 
@@ -163,6 +160,9 @@ fun MainScreen(
                             navController.navigate(Screen.Login.route) {
                                 popUpTo(Screen.Main.route) { inclusive = true }
                             }
+                        },
+                        onNavigateMission = {
+                            navController.navigate(Screen.Mission.route)
                         }
                     )
                 }

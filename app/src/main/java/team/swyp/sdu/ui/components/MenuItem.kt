@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import team.swyp.sdu.ui.theme.Grey10
+import team.swyp.sdu.ui.theme.SemanticColor
 import team.swyp.sdu.ui.theme.TypeScale
 import team.swyp.sdu.ui.theme.walkItTypography
 
@@ -42,13 +43,13 @@ fun MenuItem(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick) // 클릭 가능 영역
+            .padding(horizontal = 16.dp, vertical = 12.dp), // ripple을 넓히는 padding
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 왼쪽: 제목 텍스트
         Text(
             text = title,
             style = MaterialTheme.walkItTypography.bodyS.copy(
@@ -57,13 +58,13 @@ fun MenuItem(
             color = Grey10
         )
 
-        // 오른쪽: chevron_right 아이콘
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = Color(0xFF818185), // color/icon/grey
+            tint = SemanticColor.iconGrey,
             modifier = Modifier.size(24.dp),
         )
     }
 }
+
 

@@ -26,7 +26,6 @@ fun SectionCard(
                 color = SemanticColor.backgroundWhiteSecondary, // color/background/white-secondary
                 shape = RoundedCornerShape(8.dp), // radius/8px (Figma 디자인에 맞춤)
             )
-            .padding(vertical = 12.dp, horizontal = 16.dp)
     ) {
         content()
     }

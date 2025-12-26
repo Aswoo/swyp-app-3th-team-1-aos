@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -101,6 +102,7 @@ fun NotificationSettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(SemanticColor.backgroundWhitePrimary)
     ) {
         AppHeader(
@@ -121,7 +123,7 @@ fun NotificationSettingsScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // 전체 알림 섹션 (Figma 디자인에 맞춘 별도 구현)
+            // 전체 알림 섹션 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,44 +152,59 @@ fun NotificationSettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             // 알림 설정 섹션 (목표 알림, 신규 미션, 신규 요청)
-            SectionCard {
-                Text(
-                    text = "알림 설정",
-                    style = MaterialTheme.walkItTypography.bodyL.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    color = Grey10,
-                )
-                Spacer(Modifier.height(8.dp))
 
-                ToggleMenuItem(
-                    title = "목표 알림",
-                    checked = uiState.goalNotificationEnabled,
-                    onCheckedChange = onGoalNotificationEnabledChange,
-                )
-                Spacer(Modifier.height(8.dp))
+            val verticalPadding = 12.dp
+            val horizontalPadding = 16.dp
+            SectionCard(
+            ) {
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = horizontalPadding,
+                        vertical = verticalPadding
+                    )
+                ) {
+                    Text(
+                        text = "알림 설정",
+                        style = MaterialTheme.walkItTypography.bodyL.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = Grey10,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ToggleMenuItem(
+                        title = "목표 알림",
+                        checked = uiState.goalNotificationEnabled,
+                        onCheckedChange = onGoalNotificationEnabledChange,
+                    )
+                    Spacer(Modifier.height(8.dp))
 
-                ToggleMenuItem(
-                    title = "신규 미션",
-                    checked = uiState.missionNotificationEnabled,
-                    onCheckedChange = onMissionNotificationEnabledChange,
-                )
-                Spacer(Modifier.height(8.dp))
+                    ToggleMenuItem(
+                        title = "신규 미션",
+                        checked = uiState.missionNotificationEnabled,
+                        onCheckedChange = onMissionNotificationEnabledChange,
+                    )
+                    Spacer(Modifier.height(8.dp))
 
-                ToggleMenuItem(
-                    title = "신규 요청",
-                    checked = uiState.friendNotificationEnabled,
-                    onCheckedChange = onFriendNotificationEnabledChange,
-                )
+                    ToggleMenuItem(
+                        title = "신규 요청",
+                        checked = uiState.friendNotificationEnabled,
+                        onCheckedChange = onFriendNotificationEnabledChange,
+                    )
+                }
+
+
             }
             Spacer(modifier = Modifier.height(8.dp))
 
             SectionCard {
-                ToggleMenuItem(
-                    title = "마케팅 푸쉬 동의",
-                    checked = uiState.marketingPushEnabled,
-                    onCheckedChange = onMarketingPushEnabledChange,
-                )
+                Column(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                    ToggleMenuItem(
+                        title = "마케팅 푸쉬 동의",
+                        checked = uiState.marketingPushEnabled,
+                        onCheckedChange = onMarketingPushEnabledChange,
+                    )
+                }
+
             }
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -31,7 +31,7 @@ val Green5 = Color(0xFF2ABB42)
 
 val Blue1 = Color(0xFFE9F2FF)
 val Blue6 = Color(0xFF1D7AFC)
-val Blue3 = Color(0xFFFDD0D5)
+val Blue3 = Color(0xFF84B8FF)
 
 val Purple1 = Color(0xFFF6F4FF)
 val Purple3 = Color(0xFFB8ACF6)

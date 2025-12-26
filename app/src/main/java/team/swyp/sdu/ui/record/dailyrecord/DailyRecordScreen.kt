@@ -1,25 +1,38 @@
-package team.swyp.sdu.ui.record
+package team.swyp.sdu.ui.record.dailyrecord
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import team.swyp.sdu.R
 import team.swyp.sdu.data.model.WalkingSession
 import team.swyp.sdu.presentation.viewmodel.CalendarViewModel
 import team.swyp.sdu.ui.components.AppHeader
@@ -28,9 +41,15 @@ import team.swyp.sdu.ui.record.components.WalkingStatsCard
 import team.swyp.sdu.ui.theme.WalkItTheme
 import team.swyp.sdu.utils.LocationTestData
 import team.swyp.sdu.data.model.EmotionType
+import team.swyp.sdu.ui.components.ConfirmDialog
+import team.swyp.sdu.ui.theme.SemanticColor
+import team.swyp.sdu.ui.theme.walkItTypography
+import timber.log.Timber
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
 
 /**
  * 일간 기록 Route 컴포넌트
@@ -54,6 +73,7 @@ fun DailyRecordRoute(
         try {
             LocalDate.parse(dateString)
         } catch (e: Exception) {
+            Timber.i("파싱 실패!!오늘날짯용 $dateString")
             LocalDate.now() // 파싱 실패 시 오늘 날짜 사용
         }
     }
@@ -108,96 +128,138 @@ fun DailyRecordScreen(
         mutableIntStateOf(if (sessionsForDate.isNotEmpty()) 0 else -1)
     }
 
-    // 현재 선택된 세션
     val selectedSession = remember(selectedSessionIndex, sessionsForDate) {
-        if (selectedSessionIndex in sessionsForDate.indices) {
-            sessionsForDate[selectedSessionIndex]
-        } else {
-            null
-        }
+        sessionsForDate.getOrNull(selectedSessionIndex)
     }
 
-    // 날짜 포맷팅 (예: "2024년 12월 5일")
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
     val dateLabel = remember(selectedDate) {
         selectedDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일"))
     }
 
-    Column(modifier = modifier) {
-        // 헤더
-        AppHeader(
-            title = dateLabel,
-            onNavigateBack = onNavigateBack,
-        )
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(SemanticColor.backgroundWhitePrimary)
+            .windowInsetsPadding(WindowInsets.systemBars),
+    ) {
+        Column(modifier = modifier) {
+            // 헤더
+            AppHeader(
+                title = dateLabel,
+                onNavigateBack = onNavigateBack,
+            )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // 세션 썸네일 목록 (LazyRow)
-            if (sessionsForDate.isNotEmpty()) {
-                SessionThumbnailList(
-                    sessions = sessionsForDate,
-                    selectedIndex = selectedSessionIndex,
-                    onSessionSelected = { selectedSessionIndex = it },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                // 하단 원형 indicator
-                SessionIndicatorRow(
-                    totalCount = sessionsForDate.size,
-                    selectedIndex = selectedSessionIndex,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            if (selectedSession == null) {
+                EmptySessionContent()
             } else {
-                // 세션이 없는 경우
-                EmptySessionMessage()
-            }
-
-            // 선택된 세션이 있으면 통계 및 일기 표시
-            selectedSession?.let { session ->
-                // 일간 통계 카드 (평균 걸음, 산책 시간)
-                WalkingStatsCard(
-                    sessions = listOf(session),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                // 현재 선택된 세션의 일기 카드
-                WalkingDiaryCard(
-                    session = session,
-                    modifier = Modifier.fillMaxWidth(),
+                DailyRecordContent(
+                    sessionsForDate = sessionsForDate,
+                    selectedSessionIndex = selectedSessionIndex,
+                    onSessionSelected = { selectedSessionIndex = it },
+                    selectedSession = selectedSession
                 )
             }
+        }
+
+        if (showConfirmDialog) {
+            ConfirmDialog(
+                title = "변경된 사항이 있습니다.",
+                message = "저장하시겠습니까?",
+                onPositive = {
+                    showConfirmDialog = false
+                    onNavigateBack()
+                },
+                onNegative = { showConfirmDialog = false },
+                onDismiss = { showConfirmDialog = false }
+            )
         }
     }
 }
 
-/**
- * 세션이 없을 때 표시하는 메시지 컴포넌트
- */
 @Composable
-private fun EmptySessionMessage() {
-    Box(
+fun DailyRecordContent(
+    sessionsForDate: List<WalkingSession>,
+    selectedSessionIndex: Int,
+    onSessionSelected: (Int) -> Unit,
+    selectedSession: WalkingSession
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        androidx.compose.material3.Text(
-            text = "이 날짜에 산책 기록이 없습니다.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
+        // 세션 썸네일 목록
+        SessionThumbnailList(
+            sessions = sessionsForDate,
+            selectedIndex = selectedSessionIndex,
+            onSessionSelected = onSessionSelected,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 원형 indicator
+        SessionIndicatorRow(
+            totalCount = sessionsForDate.size,
+            selectedIndex = selectedSessionIndex,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 선택된 세션의 통계 및 일기
+        WalkingStatsCard(
+            sessions = listOf(selectedSession),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        WalkingDiaryCard(
+            session = selectedSession,
+            modifier = Modifier.fillMaxWidth(),
+            onEditClick = {},
+            onDeleteClick = {}
         )
     }
 }
 
-/**
- * Preview 함수
- */
+@Composable
+fun EmptySessionContent() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(R.drawable.ic_empty_session),
+                contentDescription = "empty sessoin"
+            )
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text = "이 날짜에 산책 기록이 없어요",
+                // body XL/semibold
+                style = MaterialTheme.walkItTypography.bodyXL.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = SemanticColor.textBorderPrimary
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "워킷과 함께 산책하고 나만의 산책 기록을 남겨보세요.",
+                // body S/medium
+                style = MaterialTheme.walkItTypography.bodyS.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = SemanticColor.textBorderSecondary
+            )
+        }
+    }
+}
+
+
 @Composable
 @Preview(showBackground = true)
-fun DailyRecordScreenPreview() {
+fun DailyRecordScreenWithSessionsPreview() {
     WalkItTheme {
         val selectedDate = LocalDate.of(2024, 12, 5)
         val testLocations = LocationTestData.getSeoulTestLocations()
@@ -233,7 +295,22 @@ fun DailyRecordScreenPreview() {
         DailyRecordScreen(
             selectedDate = selectedDate,
             sessionsForDate = mockSessions,
-            onNavigateBack = {},
+            onNavigateBack = {}
         )
     }
 }
+
+@Composable
+@Preview(showBackground = true)
+fun DailyRecordScreenEmptyPreview() {
+    WalkItTheme {
+        val selectedDate = LocalDate.of(2024, 12, 5)
+
+        DailyRecordScreen(
+            selectedDate = selectedDate,
+            sessionsForDate = emptyList(),
+            onNavigateBack = {}
+        )
+    }
+}
+
